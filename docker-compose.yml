@@ -1,0 +1,164 @@
+services:
+  # -------------------------------------------------------------
+  # 1. RabbitMQ Message Broker
+  # -------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: chatsphere-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"     # AMQP Protocol
+      - "15672:15672"   # Management Web UI Dashboard
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 2. MongoDB Database
+  # -------------------------------------------------------------
+  mongo:
+    image: mongo:7.0
+    container_name: chatsphere-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 3. Redis In-Memory Store
+  # -------------------------------------------------------------
+  redis:
+    image: redis:alpine
+    container_name: chatsphere-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 4. User Microservice (Auth, Profile, OTP Publisher)
+  # -------------------------------------------------------------
+  user-service:
+    build:
+      context: ./Backend/user
+      dockerfile: Dockerfile
+    container_name: chatsphere-user-service
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      JWT_SECRET: ${JWT_SECRET:-aether_jwt_secret_super_secure_key_2026}
+      MONGO_URI: ${USER_MONGO_URI:-mongodb://mongo:27017/ChatAppMicroserviceApp}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      Rabbitmq_Host: rabbitmq
+      Rabbitmq_Port: 5672
+      Rabbitmq_Username: ${RABBITMQ_USER:-guest}
+      Rabbitmq_password: ${RABBITMQ_PASS:-guest}
+      MAIL_SERVICE_URL: http://mail-service:5001
+    depends_on:
+      - rabbitmq
+      - mongo
+      - redis
+    volumes:
+      - user-uploads:/app/uploads
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 5. Mail Microservice (RabbitMQ OTP Consumer)
+  # -------------------------------------------------------------
+  mail-service:
+    build:
+      context: ./Backend/mail
+      dockerfile: Dockerfile
+    container_name: chatsphere-mail-service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      Rabbitmq_Host: rabbitmq
+      Rabbitmq_Port: 5672
+      Rabbitmq_Username: ${RABBITMQ_USER:-guest}
+      Rabbitmq_password: ${RABBITMQ_PASS:-guest}
+      USER: ${MAIL_USER:-krishna1863singh@gmail.com}
+      PASSWORD: ${MAIL_PASSWORD:-lnop qrpb snui rwhu}
+    depends_on:
+      - rabbitmq
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 6. Chat Microservice (Chat, Status, Socket.io, Chat Lock)
+  # -------------------------------------------------------------
+  chat-service:
+    build:
+      context: ./Backend/chat
+      dockerfile: Dockerfile
+    container_name: chatsphere-chat-service
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    environment:
+      PORT: 5002
+      JWT_SECRET: ${JWT_SECRET:-aether_jwt_secret_super_secure_key_2026}
+      MONGO_URI: ${CHAT_MONGO_URI:-mongodb://mongo:27017/ChatAppMicroserviceApp}
+      USER_SERVICE: http://user-service:5000
+      Cloud_Name: ${CLOUDINARY_CLOUD_NAME:-dzssijacq}
+      API_KEY: ${CLOUDINARY_API_KEY:-123456789012345}
+      API_SECRET: ${CLOUDINARY_API_SECRET:-mock_api_secret_key}
+    depends_on:
+      mongo:
+        condition: service_started
+      user-service:
+        condition: service_started
+    volumes:
+      - chat-uploads:/app/uploads
+    networks:
+      - chatsphere-network
+
+  # -------------------------------------------------------------
+  # 7. Frontend (React + Vite + Nginx)
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_USER_SERVICE_URL: ${VITE_USER_SERVICE_URL:-http://56.228.24.96:5000/api/v1}
+        VITE_CHAT_SERVICE_URL: ${VITE_CHAT_SERVICE_URL:-http://56.228.24.96:5002/api/v1}
+        VITE_CHAT_SOCKET_URL: ${VITE_CHAT_SOCKET_URL:-http://56.228.24.96:5002}
+    container_name: chatsphere-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - user-service
+      - chat-service
+    networks:
+      - chatsphere-network
+
+# -------------------------------------------------------------
+# Networks & Persistent Volumes
+# -------------------------------------------------------------
+networks:
+  chatsphere-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
+  user-uploads:
+  chat-uploads:

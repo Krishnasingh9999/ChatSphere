@@ -33,6 +33,7 @@
     "@types/multer": "^2.1.0",
     "concurrently": "^9.2.1",
     "nodemon": "^3.1.14",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "typescript": "^5.7.3"
   }
 }

@@ -2,6 +2,8 @@ import amqp from "amqplib";
 
 let channel: amqp.Channel;
 
+let isConnecting = false;
+
 export const connectRabbitMQ = async () => {
   const rabbitUrl = process.env.RABBITMQ_URL;
   const host = process.env.Rabbitmq_Host;
@@ -11,22 +13,46 @@ export const connectRabbitMQ = async () => {
     return;
   }
 
-  try {
-    const connection = rabbitUrl
-      ? await amqp.connect(rabbitUrl)
-      : await amqp.connect({
-          protocol: "amqp",
-          hostname: host,
-          port: Number(process.env.Rabbitmq_Port) || 5672,
-          username: process.env.Rabbitmq_Username || "guest",
-          password: process.env.Rabbitmq_password || "guest",
-        });
+  if (isConnecting || channel) return;
+  isConnecting = true;
 
-    channel = await connection.createChannel();
-    console.log("✅ connected to rabbitmq");
-  } catch (error) {
-    console.log("⚠️ Failed to connect to rabbitmq. Continuing in offline mode.", error);
-  }
+  const attemptConnect = async (retries = 10, delay = 5000) => {
+    try {
+      const connection = rabbitUrl
+        ? await amqp.connect(rabbitUrl)
+        : await amqp.connect({
+            protocol: "amqp",
+            hostname: host,
+            port: Number(process.env.Rabbitmq_Port) || 5672,
+            username: process.env.Rabbitmq_Username || "guest",
+            password: process.env.Rabbitmq_password || "guest",
+          });
+
+      channel = await connection.createChannel();
+      isConnecting = false;
+      console.log("✅ connected to rabbitmq");
+
+      connection.on("error", () => {
+        channel = null as any;
+        setTimeout(attemptConnect, 5000);
+      });
+
+      connection.on("close", () => {
+        channel = null as any;
+        setTimeout(attemptConnect, 5000);
+      });
+    } catch (error) {
+      if (retries > 0) {
+        console.log(`⚠️ RabbitMQ not ready yet. Retrying in ${delay / 1000}s... (${retries} attempts left)`);
+        setTimeout(() => attemptConnect(retries - 1, delay), delay);
+      } else {
+        isConnecting = false;
+        console.log("⚠️ RabbitMQ connection unavailable. Continuing in offline mode.");
+      }
+    }
+  };
+
+  attemptConnect();
 };
 
 export const publishQueue = async (queueName: string, message: any): Promise<boolean> => {
