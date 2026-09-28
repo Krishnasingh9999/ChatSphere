@@ -27,7 +27,7 @@ export const sendEmail = async ({ to, subject, body, html }: EmailOptions): Prom
   });
 
   const mailOptions = {
-    from: `"AetherChat" <${user.trim()}>`,
+    from: `"ChatSphere" <${user.trim()}>`,
     to,
     subject,
     text: body || "",

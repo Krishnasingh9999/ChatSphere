@@ -1,7 +1,9 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 
-const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:5000/api/v1';
-const CHAT_SERVICE_URL = import.meta.env.VITE_CHAT_SERVICE_URL || 'http://localhost:5002/api/v1';
+const isProduction = typeof window !== 'undefined' && (window.location.protocol === 'https:' || !window.location.hostname.includes('localhost'));
+
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || (isProduction ? '/api/v1' : 'http://localhost:5000/api/v1');
+const CHAT_SERVICE_URL = import.meta.env.VITE_CHAT_SERVICE_URL || (isProduction ? '/api/v1' : 'http://localhost:5002/api/v1');
 
 export const userApi = axios.create({
   baseURL: USER_SERVICE_URL,
@@ -27,6 +29,7 @@ export const getAvatarUrl = (url?: string | null) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
   if (url.startsWith('/uploads')) {
+    if (isProduction) return url;
     const userBaseUrl = import.meta.env.VITE_USER_SERVICE_URL
       ? import.meta.env.VITE_USER_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5000';
@@ -39,6 +42,7 @@ export const getMediaUrl = (url?: string | null) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
   if (url.startsWith('/uploads')) {
+    if (isProduction) return url;
     const chatBaseUrl = import.meta.env.VITE_CHAT_SERVICE_URL
       ? import.meta.env.VITE_CHAT_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5002';
