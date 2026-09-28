@@ -2,8 +2,8 @@ import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 const isProduction = typeof window !== 'undefined' && (window.location.protocol === 'https:' || !window.location.hostname.includes('localhost'));
 
-const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || (isProduction ? '/api/v1' : 'http://localhost:5000/api/v1');
-const CHAT_SERVICE_URL = import.meta.env.VITE_CHAT_SERVICE_URL || (isProduction ? '/api/v1' : 'http://localhost:5002/api/v1');
+const USER_SERVICE_URL = isProduction ? '/api/v1' : (import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:5000/api/v1');
+const CHAT_SERVICE_URL = isProduction ? '/api/v1' : (import.meta.env.VITE_CHAT_SERVICE_URL || 'http://localhost:5002/api/v1');
 
 export const userApi = axios.create({
   baseURL: USER_SERVICE_URL,

@@ -135,10 +135,6 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-      args:
-        VITE_USER_SERVICE_URL: ${VITE_USER_SERVICE_URL:-https://chatsphere-live.duckdns.org/api/v1}
-        VITE_CHAT_SERVICE_URL: ${VITE_CHAT_SERVICE_URL:-https://chatsphere-live.duckdns.org/api/v1}
-        VITE_CHAT_SOCKET_URL: ${VITE_CHAT_SOCKET_URL:-https://chatsphere-live.duckdns.org}
     container_name: chatsphere-frontend
     restart: unless-stopped
     ports:

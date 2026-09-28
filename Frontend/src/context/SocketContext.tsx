@@ -24,8 +24,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const isProduction = typeof window !== 'undefined' && (window.location.protocol === 'https:' || !window.location.hostname.includes('localhost'));
-    const defaultSocketUrl = isProduction ? window.location.origin : 'http://localhost:5002';
-    const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL || defaultSocketUrl;
+    const socketUrl = isProduction ? window.location.origin : (import.meta.env.VITE_CHAT_SOCKET_URL || 'http://localhost:5002');
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling']
     });
