@@ -471,8 +471,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         formData.append('text', text.trim());
       }
       if (selectedFile) {
-        formData.append('file', selectedFile);
-        formData.append('image', selectedFile);
+        if (selectedFile.type.startsWith('image/')) {
+          formData.append('image', selectedFile);
+        } else {
+          formData.append('file', selectedFile);
+        }
       }
 
       await chatApi.post('/message', formData);

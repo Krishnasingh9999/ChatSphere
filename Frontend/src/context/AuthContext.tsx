@@ -84,10 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (data: FormData | { name: string }) => {
     try {
-      const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
-      const res = await userApi.post('/update/user', data, {
-        headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
-      });
+      const res = await userApi.post('/update/user', data);
       const { token: updatedToken, user: updatedUser } = res.data;
       
       if (updatedToken) {
