@@ -138,7 +138,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
     if (url.startsWith('/uploads')) {
-      const chatBaseUrl = import.meta.env.VITE_CHAT_SOCKET_URL || 'http://localhost:5002';
+      const isProduction = typeof window !== 'undefined' && (window.location.protocol === 'https:' || !window.location.hostname.includes('localhost'));
+      if (isProduction) return url;
+      const chatBaseUrl = import.meta.env.VITE_CHAT_SERVICE_URL
+        ? import.meta.env.VITE_CHAT_SERVICE_URL.replace('/api/v1', '')
+        : 'http://localhost:5002';
       return `${chatBaseUrl}${url}`;
     }
     return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
@@ -1304,12 +1308,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* Message input area */}
-      <div className={`p-4 border-t backdrop-blur-md z-10 relative transition-colors duration-300 ${
+      <div className={`px-2.5 py-2 sm:px-4 sm:py-3 border-t backdrop-blur-md z-10 relative transition-colors duration-300 w-full max-w-full overflow-hidden ${
         theme === 'light'
-          ? 'bg-white/90 border-gray-200 shadow-sm'
-          : 'bg-[#111827]/40 border-white/10'
+          ? 'bg-white/95 border-gray-200 shadow-sm'
+          : 'bg-[#111827]/60 border-white/10'
       }`}>
-        <form onSubmit={handleSend} className="relative flex flex-col gap-2">
+        <form onSubmit={handleSend} className="relative flex flex-col gap-1.5 sm:gap-2 w-full max-w-full">
           {/* File preview slider */}
           {filePreview && (
             <div className={`flex items-center gap-3 p-2.5 border rounded-xl max-w-sm animate-slide-up ${
@@ -1368,7 +1372,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           )}
 
           {/* Form input bar */}
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-1.5 sm:gap-2 relative w-full max-w-full min-w-0">
             {/* WhatsApp-Style Emoji Picker Popup */}
             {showEmojiPicker && (
               <div
@@ -1431,7 +1435,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               value={text}
               onChange={handleTextChange}
               disabled={sending}
-              className={`flex-1 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-sm focus:outline-none focus:ring-2 ${chatThemeConfig.focusRing} focus:border-transparent transition-all ${
+              className={`flex-1 min-w-0 w-0 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-[15px] sm:text-sm focus:outline-none focus:ring-2 ${chatThemeConfig.focusRing} focus:border-transparent transition-all ${
                 theme === 'light'
                   ? 'bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-400 focus:bg-white'
                   : 'bg-[#0b0f19]/80 border border-white/10 text-white placeholder-gray-500'
@@ -1441,7 +1445,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <button
               type="submit"
               disabled={sending || (!text.trim() && !selectedFile)}
-              className={`p-2.5 sm:p-3 bg-gradient-to-r ${chatThemeConfig.sendButton} disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 text-white rounded-xl shadow-lg ${chatThemeConfig.shadowGlow} active:scale-95 transition-all flex items-center justify-center flex-shrink-0`}
+              className={`p-2 sm:p-2.5 bg-gradient-to-r ${chatThemeConfig.sendButton} disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 text-white rounded-xl shadow-lg ${chatThemeConfig.shadowGlow} active:scale-95 transition-all flex items-center justify-center flex-shrink-0`}
             >
               {sending ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
