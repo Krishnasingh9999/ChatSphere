@@ -22,6 +22,52 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<ToastMessage[]>([]);
 
+  // Pinned Chats State (WhatsApp-style, Max 3 pinned chats per user)
+  const [pinnedChatIds, setPinnedChatIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined' && user?._id) {
+      try {
+        const saved = localStorage.getItem(`chatsphere_pinned_${user._id}`);
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (user?._id) {
+      try {
+        const saved = localStorage.getItem(`chatsphere_pinned_${user._id}`);
+        setPinnedChatIds(saved ? JSON.parse(saved) : []);
+      } catch {
+        setPinnedChatIds([]);
+      }
+    }
+  }, [user?._id]);
+
+  const togglePinChat = (chatId: string) => {
+    if (!chatId) return;
+    setPinnedChatIds((prev) => {
+      let updated: string[];
+      if (prev.includes(chatId)) {
+        updated = prev.filter((id) => id !== chatId);
+      } else {
+        if (prev.length >= 3) {
+          alert("📌 You can only pin up to 3 conversations.");
+          return prev;
+        }
+        updated = [chatId, ...prev];
+      }
+      if (user?._id) {
+        try {
+          localStorage.setItem(`chatsphere_pinned_${user._id}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
   const [typingChats, setTypingChats] = useState<{ [chatId: string]: boolean }>({});
   const typingTimeoutsRef = useRef<{ [chatId: string]: any }>({});
 
@@ -267,13 +313,32 @@ export const Dashboard: React.FC = () => {
   }, [socket, user]);
 
   // Handle starting a new conversation
-  const handleChatCreated = async (newChatId: string) => {
+  const handleChatCreated = async (newChatId: string, targetUser?: any) => {
+    if (targetUser) {
+      const initialChat: ChatItem = {
+        chat: {
+          _id: newChatId,
+          users: [user?._id || '', targetUser._id],
+          latestMessage: null,
+          unseenCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        user: targetUser
+      };
+      setChats(prev => {
+        const exists = prev.some(c => String(c.chat._id) === String(newChatId));
+        return exists ? prev : [initialChat, ...prev];
+      });
+      setActiveChat(initialChat);
+    }
+
     await fetchChats(false);
     
     try {
       const res = await chatApi.get('/chat/all');
-      const latestChats = res.data.chats || [];
-      const found = latestChats.find((item: ChatItem) => item.chat._id === newChatId);
+      const latestChats: ChatItem[] = res.data.chats || [];
+      const found = latestChats.find((item: ChatItem) => String(item.chat._id) === String(newChatId));
       if (found) {
         setActiveChat(found);
       }
@@ -366,9 +431,11 @@ export const Dashboard: React.FC = () => {
               chats={chats}
               activeChatId={activeChat?.chat._id || null}
               typingChats={typingChats}
+              pinnedChatIds={pinnedChatIds}
               onSelectChat={handleSelectChat}
               onChatCreated={handleChatCreated}
               onDeleteChat={handleDeleteChat}
+              onTogglePin={togglePinChat}
               onChatLockChanged={() => fetchChats(false)}
             />
           </div>
@@ -378,8 +445,10 @@ export const Dashboard: React.FC = () => {
             <ChatArea
               chatId={activeChat?.chat._id || null}
               otherUser={activeChat?.user || null}
+              isPinned={activeChat ? pinnedChatIds.includes(activeChat.chat._id) : false}
               onMessageSent={() => fetchChats(false)}
               onDeleteChat={handleDeleteChat}
+              onTogglePin={togglePinChat}
               onBack={() => setActiveChat(null)}
               onChatLockChanged={() => fetchChats(false)}
             />

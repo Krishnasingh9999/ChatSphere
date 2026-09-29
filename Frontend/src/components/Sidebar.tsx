@@ -22,6 +22,8 @@ import {
   Image as ImageIcon,
   Type,
   ChevronRight,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { useChatLock } from '../context/ChatLockContext';
 import { ChatLockModal, type ChatLockModalMode } from './ChatLockModal';
@@ -69,9 +71,11 @@ interface SidebarProps {
   chats: ChatItem[];
   activeChatId: string | null;
   typingChats?: { [chatId: string]: boolean };
+  pinnedChatIds?: string[];
   onSelectChat: (chat: ChatItem) => void;
-  onChatCreated: (chatId: string) => void;
+  onChatCreated: (chatId: string, targetUser?: any) => void;
   onDeleteChat?: (chatId: string) => void;
+  onTogglePin?: (chatId: string) => void;
   onChatLockChanged?: () => void;
 }
 
@@ -79,9 +83,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   chats,
   activeChatId,
   typingChats = {},
+  pinnedChatIds = [],
   onSelectChat,
   onChatCreated,
   onDeleteChat,
+  onTogglePin,
   onChatLockChanged,
 }) => {
   const { user, logout } = useAuth();
@@ -173,6 +179,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     item.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // WhatsApp-style Pinned chats (Max 3) placed at the top of the chat list
+  const sortedRegularChats = [
+    ...filteredRegularChats.filter((item) => pinnedChatIds.includes(item.chat._id)),
+    ...filteredRegularChats.filter((item) => !pinnedChatIds.includes(item.chat._id)),
+  ];
 
   const filteredLockedChats = lockedChats.filter((item) =>
     item.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -618,7 +630,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
 
             {/* Regular Chats List */}
-            {filteredRegularChats.length === 0 && lockedChats.length === 0 ? (
+            {sortedRegularChats.length === 0 && lockedChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                 <MessageSquare className={`w-8 h-8 mb-2 ${
                   theme === 'light' ? 'text-gray-300' : 'text-gray-600'
@@ -630,11 +642,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </p>
               </div>
             ) : (
-              filteredRegularChats.map((item) => {
+              sortedRegularChats.map((item) => {
                 const isActive = activeChatId === item.chat._id;
                 const isTyping = Boolean(typingChats[item.chat._id]) && !isActive;
                 const hasUnread = item.chat.unseenCount > 0;
                 const latestMsg = item.chat.latestMessage;
+                const isPinned = pinnedChatIds.includes(item.chat._id);
                 
                 return (
                   <div
@@ -645,6 +658,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ? theme === 'light'
                           ? 'bg-indigo-50 border-indigo-200 text-indigo-950 shadow-sm'
                           : 'bg-indigo-500/10 border-indigo-500/30 text-white'
+                        : isPinned
+                        ? theme === 'light'
+                          ? 'bg-indigo-50/40 border-indigo-100 hover:bg-indigo-50/70 text-gray-800'
+                          : 'bg-indigo-500/5 border-indigo-500/20 hover:bg-indigo-500/10 text-gray-200'
                         : theme === 'light'
                         ? 'border-transparent hover:bg-gray-100/80 text-gray-700'
                         : 'border-transparent hover:bg-white/5 text-gray-300'
@@ -679,11 +696,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }`}>
                             {item.user.name}
                           </h4>
-                          <span className={`text-[9px] flex-shrink-0 ${
-                            theme === 'light' ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {formatTime(item.chat.updatedAt)}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {isPinned && (
+                              <span title="Pinned chat" className="text-indigo-500 flex items-center">
+                                <Pin className="w-3 h-3 rotate-45 fill-indigo-500/20 text-indigo-500" />
+                              </span>
+                            )}
+                            <span className={`text-[9px] ${
+                              theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              {formatTime(item.chat.updatedAt)}
+                            </span>
+                          </div>
                         </div>
                         <p className={`text-[11px] truncate pr-2 ${
                           hasUnread 
@@ -712,6 +736,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     
                     <div className="flex items-center gap-1">
+                      {/* Pin / Unpin Chat Button (Max 3) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTogglePin?.(item.chat._id);
+                        }}
+                        title={isPinned ? "Unpin chat" : "Pin chat (Max 3)"}
+                        className={`${isPinned ? 'opacity-100 text-indigo-500' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-500'} p-1.5 rounded-lg transition-all ${
+                          theme === 'light'
+                            ? 'hover:bg-indigo-50'
+                            : 'hover:bg-white/10'
+                        }`}
+                      >
+                        {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                      </button>
+
                       {/* Lock chat button (visible on hover) */}
                       <button
                         type="button"

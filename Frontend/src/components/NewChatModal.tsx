@@ -7,7 +7,7 @@ import { X, Search, UserPlus, MessageSquare } from 'lucide-react';
 interface NewChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onChatCreated: (chatId: string) => void;
+  onChatCreated: (chatId: string, targetUser?: User) => void;
   currentUserId: string;
 }
 
@@ -45,12 +45,12 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
     fetchUsers();
   }, [isOpen, currentUserId]);
 
-  const handleCreateChat = async (userId: string) => {
+  const handleCreateChat = async (targetUser: User) => {
     try {
       setLoading(true);
-      const res = await chatApi.post('/chat/new', { otherUserId: userId });
+      const res = await chatApi.post('/chat/new', { otherUserId: targetUser._id });
       // The backend returns { message, chatId }
-      onChatCreated(res.data.chatId);
+      onChatCreated(String(res.data.chatId), targetUser);
       onClose();
     } catch (err: any) {
       console.error("Failed to start chat:", err);
@@ -141,7 +141,7 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
             filteredUsers.map((userItem) => (
               <button
                 key={userItem._id}
-                onClick={() => handleCreateChat(userItem._id)}
+                onClick={() => handleCreateChat(userItem)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl group border transition-all duration-200 ${
                   theme === 'dark'
                     ? 'hover:bg-white/5 border-transparent hover:border-white/5'

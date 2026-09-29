@@ -23,7 +23,9 @@ import {
   ArrowLeft,
   Lock,
   Unlock,
-  MoreVertical
+  MoreVertical,
+  Pin,
+  PinOff
 } from 'lucide-react';
 import { useChatLock } from '../context/ChatLockContext';
 import { ChatLockModal, type ChatLockModalMode } from './ChatLockModal';
@@ -68,8 +70,10 @@ interface ChatAreaProps {
       publicId: string;
     } | null;
   } | null;
+  isPinned?: boolean;
   onMessageSent: () => void;
   onDeleteChat?: (chatId: string) => void;
+  onTogglePin?: (chatId: string) => void;
   onBack?: () => void;
   onChatLockChanged?: () => void;
 }
@@ -77,8 +81,10 @@ interface ChatAreaProps {
 export const ChatArea: React.FC<ChatAreaProps> = ({ 
   chatId, 
   otherUser, 
+  isPinned = false,
   onMessageSent, 
   onDeleteChat, 
+  onTogglePin,
   onBack,
   onChatLockChanged 
 }) => {
@@ -740,6 +746,22 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           {/* Desktop Direct Action Icons */}
           <div className="hidden md:flex items-center gap-1">
+            {/* Pin / Unpin Chat Button (Max 3) */}
+            <button
+              type="button"
+              onClick={() => chatId && onTogglePin?.(chatId)}
+              title={isPinned ? "Unpin Conversation" : "Pin Conversation (Max 3)"}
+              className={`p-2 rounded-xl active:scale-95 transition-all ${
+                isPinned
+                  ? 'text-indigo-500 bg-indigo-500/10 hover:bg-indigo-500/20'
+                  : theme === 'light'
+                  ? 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'
+                  : 'text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10'
+              }`}
+            >
+              {isPinned ? <PinOff className="w-4.5 h-4.5 text-indigo-500" /> : <Pin className="w-4.5 h-4.5" />}
+            </button>
+
             {/* Lock / Unlock Chat Button */}
             <button
               type="button"
@@ -813,6 +835,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     : 'bg-[#111827] border-white/10 text-white shadow-2xl'
                 }`}
               >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    if (chatId) onTogglePin?.(chatId);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                    isPinned
+                      ? 'text-indigo-500 hover:bg-indigo-500/10'
+                      : theme === 'light'
+                      ? 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-200 hover:bg-white/5'
+                  }`}
+                >
+                  {isPinned ? <PinOff className="w-4 h-4 text-indigo-500" /> : <Pin className="w-4 h-4 text-indigo-500" />}
+                  <span>{isPinned ? "Unpin Conversation" : "Pin Conversation (Max 3)"}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {

@@ -45,9 +45,19 @@ export const createNewChat = TryCatch(async(req: AuthenticatedRequest, res)=> {
   }
 
   if(existingChat){
+    if (existingChat.deletedFor && existingChat.deletedFor.map(String).includes(userIdStr)) {
+      if (mongoose.connection.readyState === 1) {
+        await Chat.updateOne(
+          { _id: existingChat._id },
+          { $pull: { deletedFor: userIdStr } }
+        );
+      } else {
+        existingChat.deletedFor = (existingChat.deletedFor || []).filter((id: string) => String(id) !== userIdStr);
+      }
+    }
     res.json({
       message: "Chat already exist",
-      chatId: existingChat._id,
+      chatId: String(existingChat._id),
     });
     return;
   }
@@ -56,12 +66,14 @@ export const createNewChat = TryCatch(async(req: AuthenticatedRequest, res)=> {
   if (mongoose.connection.readyState === 1) {
     newChat = await Chat.create({
       users: [userIdStr, otherUserIdStr],
+      deletedFor: [],
     });
   } else {
     newChat = {
       _id: "mock_chat_" + Math.random().toString(36).substr(2, 9),
       users: [userIdStr, otherUserIdStr],
       latestMessage: null,
+      deletedFor: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -70,7 +82,7 @@ export const createNewChat = TryCatch(async(req: AuthenticatedRequest, res)=> {
 
   res.status(201).json({
     message: "New Chat created",
-    chatId: newChat._id || newChat.id
+    chatId: String(newChat._id || newChat.id)
   });
 });
 
