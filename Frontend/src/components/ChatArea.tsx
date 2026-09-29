@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { Theme, EmojiStyle, type EmojiClickData } from 'emoji-picker-react';
 import { chatApi } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -171,9 +171,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   // Handle emoji selection
-  const handleEmojiClick = (emojiData: EmojiClickData) => {
+  const handleEmojiClick = (emojiData: EmojiClickData | string) => {
+    const emojiChar = typeof emojiData === 'string' ? emojiData : emojiData?.emoji;
+    if (!emojiChar) return;
+
     setText((prev) => {
-      const updated = prev + emojiData.emoji;
+      const updated = prev + emojiChar;
 
       if (socket && chatId && otherUser) {
         socket.emit('typing', {
@@ -204,26 +207,29 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   // Close emoji, theme picker, & mobile menu on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
       if (
         emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement)?.closest('.emoji-toggle-btn')
+        !emojiPickerRef.current.contains(target) &&
+        !target?.closest('.emoji-toggle-btn') &&
+        !target?.closest('.EmojiPickerReact') &&
+        !target?.closest('.epr-main')
       ) {
         setShowEmojiPicker(false);
       }
 
       if (
         themePickerRef.current &&
-        !themePickerRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement)?.closest('.theme-toggle-btn')
+        !themePickerRef.current.contains(target) &&
+        !target?.closest('.theme-toggle-btn')
       ) {
         setShowThemePicker(false);
       }
 
       if (
         mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement)?.closest('.mobile-menu-btn')
+        !mobileMenuRef.current.contains(target) &&
+        !target?.closest('.mobile-menu-btn')
       ) {
         setShowMobileMenu(false);
       }
@@ -1394,16 +1400,43 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <div
                 ref={emojiPickerRef}
                 className={`absolute bottom-full mb-3 left-0 z-50 shadow-2xl rounded-2xl overflow-hidden border animate-fade-in max-w-[calc(100vw-24px)] ${
-                  theme === 'light' ? 'border-gray-200' : 'border-white/10'
+                  theme === 'light' ? 'bg-white border-gray-200' : 'bg-[#111827] border-white/10'
                 }`}
               >
+                {/* WhatsApp Quick Emojis Header Bar */}
+                <div className={`p-2 border-b flex items-center justify-between gap-1 overflow-x-auto ${
+                  theme === 'light' ? 'bg-gray-50 border-gray-200' : 'bg-white/5 border-white/10'
+                }`}>
+                  <div className="flex items-center gap-1.5">
+                    {['😀', '😂', '😍', '❤️', '🔥', '👍', '🙏', '🎉', '👏', '🥳', '😎', '😢'].map((em) => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEmojiClick(em);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center text-lg hover:scale-125 active:scale-95 transition-transform rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+                        title={em}
+                      >
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <EmojiPicker
                   theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
-                  onEmojiClick={handleEmojiClick}
+                  emojiStyle={EmojiStyle.NATIVE}
+                  onEmojiClick={(emojiData, e) => {
+                    e?.stopPropagation?.();
+                    handleEmojiClick(emojiData);
+                  }}
                   autoFocusSearch={false}
-                  lazyLoadEmojis={true}
-                  width={typeof window !== 'undefined' ? Math.min(320, window.innerWidth - 32) : 320}
-                  height={350}
+                  lazyLoadEmojis={false}
+                  width={typeof window !== 'undefined' ? Math.min(340, window.innerWidth - 32) : 340}
+                  height={360}
                   searchPlaceHolder="Search emojis..."
                 />
               </div>
@@ -1411,7 +1444,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
             <button
               type="button"
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEmojiPicker((prev) => !prev);
+              }}
               title="Add Emoji"
               className={`emoji-toggle-btn p-2 sm:p-2.5 rounded-xl border active:scale-95 transition-all flex items-center justify-center flex-shrink-0 ${
                 showEmojiPicker
