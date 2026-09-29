@@ -30,7 +30,7 @@ import {
 import { useChatLock } from '../context/ChatLockContext';
 import { ChatLockModal, type ChatLockModalMode } from './ChatLockModal';
 
-import { getAvatarUrl } from '../utils/api';
+import { getAvatarUrl, getMediaUrl } from '../utils/api';
 
 interface Message {
   _id: string;
@@ -141,17 +141,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   // Helper to resolve Cloudinary or local upload URLs securely
   const getFileUrl = (url?: string) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
-    if (url.startsWith('/uploads')) {
-      const isProduction = typeof window !== 'undefined' && (window.location.protocol === 'https:' || !window.location.hostname.includes('localhost'));
-      if (isProduction) return url;
-      const chatBaseUrl = import.meta.env.VITE_CHAT_SERVICE_URL
-        ? import.meta.env.VITE_CHAT_SERVICE_URL.replace('/api/v1', '')
-        : 'http://localhost:5002';
-      return `${chatBaseUrl}${url}`;
-    }
-    return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
+    return getMediaUrl(url);
   };
 
   // On-demand media download handler
@@ -267,16 +257,22 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   // Load messages on chat swap
+  const prevChatIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (chatId) {
-      fetchMessages(true);
-      setText('');
-      setSelectedFile(null);
-      setFilePreview(null);
-      setIsOtherUserTyping(false);
-      setDeleteTargetMessage(null);
-      setShowEmojiPicker(false);
+      const isNewChat = prevChatIdRef.current !== chatId;
+      prevChatIdRef.current = chatId;
+      if (isNewChat) {
+        fetchMessages(true);
+        setText('');
+        setSelectedFile(null);
+        setFilePreview(null);
+        setIsOtherUserTyping(false);
+        setDeleteTargetMessage(null);
+        setShowEmojiPicker(false);
+      }
     } else {
+      prevChatIdRef.current = null;
       setMessages([]);
       setShowEmojiPicker(false);
     }
@@ -616,22 +612,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </button>
           )}
 
-          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-gradient-to-br ${chatThemeConfig.sentBubble} text-white border ${chatThemeConfig.accentBorder}/40 flex items-center justify-center font-semibold uppercase font-display select-none flex-shrink-0 shadow-sm`}>
-            {otherUser.avatar?.url ? (
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-gradient-to-br ${chatThemeConfig.sentBubble} text-white border ${chatThemeConfig.accentBorder}/40 flex items-center justify-center font-semibold uppercase font-display select-none flex-shrink-0 shadow-sm relative`}>
+            <span className="text-xs sm:text-sm font-semibold uppercase select-none">{otherUser.name.slice(0, 2)}</span>
+            {otherUser.avatar?.url && (
               <img
                 src={getAvatarUrl(otherUser.avatar.url)}
                 alt={otherUser.name}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.onerror = null;
-                  if (otherUser.avatar?.url && target.src !== otherUser.avatar.url) {
-                    target.src = otherUser.avatar.url;
-                  }
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
-            ) : (
-              otherUser.name.slice(0, 2)
             )}
           </div>
           <div className="flex flex-col text-left min-w-0 flex-1">
@@ -958,7 +949,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             return (
               <div
                 key={msg._id}
-                className={`flex w-full group ${isMe ? 'justify-end' : 'justify-start'} items-center gap-1.5 fade-in`}
+                className={`flex w-full group ${isMe ? 'justify-end' : 'justify-start'} items-center gap-1.5`}
               >
                 {/* Delete button on left for sent messages */}
                 {isMe && (
@@ -999,64 +990,46 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <>
                       {/* Image attachment rendering */}
                       {(msg.messageType === 'image' || msg.image || msg.file?.fileType === 'image') && (msg.file?.url || msg.image?.url) && (
-                        isMe || downloadedMedia.has(msg._id) ? (
-                          <div className="mb-2 rounded-xl overflow-hidden max-w-full border border-black/10 bg-black/5 relative group/img">
-                            <a href={getFileUrl(msg.file?.url || msg.image?.url)} target="_blank" rel="noopener noreferrer">
-                              <img
-                                src={getFileUrl(msg.file?.url || msg.image?.url)}
-                                alt="Attachment"
-                                className="max-h-60 object-contain hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.onerror = null;
-                                  const fallback = msg.file?.url || msg.image?.url;
-                                  if (fallback && target.src !== fallback) {
-                                    target.src = fallback;
-                                  }
-                                }}
-                              />
+                        <div className="mb-2 rounded-xl overflow-hidden max-w-full border border-black/10 bg-black/5 relative group/img min-h-[140px] flex items-center justify-center">
+                          <a href={getFileUrl(msg.file?.url || msg.image?.url)} target="_blank" rel="noopener noreferrer" className="block w-full">
+                            <img
+                              src={getFileUrl(msg.file?.url || msg.image?.url)}
+                              alt="Attachment"
+                              className="max-h-64 w-full object-cover rounded-xl hover:opacity-95 transition-all duration-200"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.closest('.group\\/img');
+                                if (parent) {
+                                  const fallbackDiv = parent.querySelector('.img-error-fallback') as HTMLElement;
+                                  if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          </a>
+                          <div className="img-error-fallback hidden flex-col items-center justify-center p-4 text-center w-full min-h-[120px]">
+                            <ImageIcon className="w-8 h-8 opacity-40 mb-1.5" />
+                            <span className="text-[11px] font-medium opacity-80 mb-2">Photo attachment</span>
+                            <a
+                              href={getFileUrl(msg.file?.url || msg.image?.url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={msg.file?.originalName || 'image.jpg'}
+                              className="px-3 py-1 bg-black/30 hover:bg-black/50 rounded-lg text-xs flex items-center gap-1"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Download
                             </a>
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadMedia(msg._id, msg.file?.url || msg.image?.url, msg.file?.originalName || 'image.jpg')}
-                              title="Download image"
-                              className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
                           </div>
-                        ) : (
-                          <div className={`mb-2 w-56 h-40 rounded-xl border flex flex-col items-center justify-center p-4 relative overflow-hidden shadow-inner ${
-                            theme === 'light'
-                              ? 'border-gray-300 bg-gradient-to-br from-gray-100 to-gray-200'
-                              : 'border-white/10 bg-gradient-to-br from-black/60 to-slate-900/80 backdrop-blur-md'
-                          }`}>
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
-                              <ImageIcon className="w-20 h-20 text-gray-500" />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadMedia(msg._id, msg.file?.url || msg.image?.url, msg.file?.originalName || 'image.jpg')}
-                              className={`w-12 h-12 rounded-full ${chatThemeConfig.accentBg} hover:opacity-90 border border-white/30 flex items-center justify-center text-white transition-all shadow-xl hover:scale-105 active:scale-95 z-10`}
-                              title="Download Photo"
-                            >
-                              <Download className="w-5 h-5" />
-                            </button>
-                            <div className="mt-2 z-10 text-center">
-                              <span className={`text-[11px] font-semibold block ${
-                                theme === 'light' ? 'text-gray-800' : 'text-white/90'
-                              }`}>
-                                {msg.file?.size ? formatFileSize(msg.file.size) : 'Photo'}
-                              </span>
-                              <span className={`text-[9px] block ${
-                                theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                              }`}>
-                                Click to download
-                              </span>
-                            </div>
-                          </div>
-                        )
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadMedia(msg._id, msg.file?.url || msg.image?.url, msg.file?.originalName || 'image.jpg')}
+                            title="Download image"
+                            className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity shadow-md"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
 
                       {/* PDF Document card rendering */}

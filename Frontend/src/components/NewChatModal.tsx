@@ -149,27 +149,21 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3.5 text-left">
-                  {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0 border ${
+                  <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0 border relative ${
                     theme === 'dark'
                       ? 'bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-indigo-300 border-indigo-500/30'
                       : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 border-indigo-200'
                   }`}>
-                    {userItem.avatar?.url ? (
+                    <span className="text-xs font-bold uppercase select-none">{userItem.name.slice(0, 2)}</span>
+                    {userItem.avatar?.url && (
                       <img
                         src={getAvatarUrl(userItem.avatar.url)}
                         alt={userItem.name}
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          if (userItem.avatar?.url && target.src !== userItem.avatar.url) {
-                            target.src = userItem.avatar.url;
-                          }
+                          (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
-                    ) : (
-                      userItem.name.slice(0, 2)
                     )}
                   </div>
                   <div>

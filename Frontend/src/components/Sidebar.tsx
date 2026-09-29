@@ -267,22 +267,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           : 'bg-[#111827]/20 border-white/10'
       }`}>
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-2">
-          <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold uppercase font-display border border-indigo-400/20 shadow-md flex-shrink-0">
-            {user.avatar?.url ? (
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold uppercase font-display border border-indigo-400/20 shadow-md flex-shrink-0 relative">
+            <span className="text-sm font-bold uppercase select-none">{user.name.slice(0, 2)}</span>
+            {user.avatar?.url && (
               <img
                 src={getAvatarUrl(user.avatar.url)}
                 alt={user.name}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.onerror = null;
-                  if (user.avatar?.url && target.src !== user.avatar.url) {
-                    target.src = user.avatar.url;
-                  }
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
-            ) : (
-              user.name.slice(0, 2)
             )}
           </div>
           <div className="flex flex-col text-left min-w-0 flex-1">
@@ -523,22 +518,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-500 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold uppercase font-display select-none flex-shrink-0">
-                              {item.user.avatar?.url ? (
+                            <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-500 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold uppercase font-display select-none flex-shrink-0 relative">
+                              <span className="text-xs font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
+                              {item.user.avatar?.url && (
                                 <img
                                   src={getAvatarUrl(item.user.avatar.url)}
                                   alt={item.user.name}
-                                  className="w-full h-full object-cover"
+                                  className="absolute inset-0 w-full h-full object-cover"
                                   onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.onerror = null;
-                                    if (item.user.avatar?.url && target.src !== item.user.avatar.url) {
-                                      target.src = item.user.avatar.url;
-                                    }
+                                    (e.target as HTMLImageElement).style.display = 'none';
                                   }}
                                 />
-                              ) : (
-                                item.user.name.slice(0, 2)
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -669,22 +659,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       {/* Participant Avatar */}
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-600/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0">
-                        {item.user.avatar?.url ? (
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-600/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0 relative">
+                        <span className="text-sm font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
+                        {item.user.avatar?.url && (
                           <img
                             src={getAvatarUrl(item.user.avatar.url)}
                             alt={item.user.name}
-                            className="w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                             onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null;
-                              if (item.user.avatar?.url && target.src !== item.user.avatar.url) {
-                                target.src = item.user.avatar.url;
-                              }
+                              (e.target as HTMLImageElement).style.display = 'none';
                             }}
                           />
-                        ) : (
-                          item.user.name.slice(0, 2)
                         )}
                       </div>
                       <div className="min-w-0 flex-1">

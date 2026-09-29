@@ -106,11 +106,21 @@ export const Dashboard: React.FC = () => {
       const fetchedChats: ChatItem[] = res.data.chats || [];
       setChats(fetchedChats);
 
-      // Keep current active chat object details synced
+      // Keep current active chat object details synced without triggering unnecessary re-renders
       if (activeChatRef.current) {
-        const updatedActive = fetchedChats.find(c => c.chat._id === activeChatRef.current?.chat._id);
+        const updatedActive = fetchedChats.find(c => String(c.chat._id) === String(activeChatRef.current?.chat._id));
         if (updatedActive) {
-          setActiveChat(updatedActive);
+          setActiveChat(prev => {
+            if (!prev) return updatedActive;
+            if (
+              prev.chat._id === updatedActive.chat._id &&
+              prev.user.name === updatedActive.user.name &&
+              prev.user.avatar?.url === updatedActive.user.avatar?.url
+            ) {
+              return prev;
+            }
+            return updatedActive;
+          });
         }
       }
     } catch (err) {

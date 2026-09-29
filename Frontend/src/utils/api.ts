@@ -27,26 +27,32 @@ chatApi.interceptors.request.use(authInterceptor, (err) => Promise.reject(err));
 
 export const getAvatarUrl = (url?: string | null) => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads')) {
-    if (isProduction) return url;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  if (cleanPath.startsWith('/uploads') || cleanPath.includes('avatar-') || cleanPath.includes('file-')) {
+    const formatted = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`;
+    if (isProduction) return formatted;
     const userBaseUrl = import.meta.env.VITE_USER_SERVICE_URL
       ? import.meta.env.VITE_USER_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5000';
-    return `${userBaseUrl}${url}`;
+    return `${userBaseUrl}${formatted}`;
   }
   return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
 };
 
 export const getMediaUrl = (url?: string | null) => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads')) {
-    if (isProduction) return url;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  if (cleanPath.startsWith('/uploads') || cleanPath.includes('avatar-') || cleanPath.includes('file-')) {
+    const formatted = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`;
+    if (isProduction) return formatted;
     const chatBaseUrl = import.meta.env.VITE_CHAT_SERVICE_URL
       ? import.meta.env.VITE_CHAT_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5002';
-    return `${chatBaseUrl}${url}`;
+    return `${chatBaseUrl}${formatted}`;
   }
   return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
 };

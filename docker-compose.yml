@@ -71,7 +71,7 @@ services:
       - mongo
       - redis
     volumes:
-      - user-uploads:/app/uploads
+      - app-uploads:/app/uploads
     networks:
       - chatsphere-network
 
@@ -124,7 +124,7 @@ services:
       user-service:
         condition: service_started
     volumes:
-      - chat-uploads:/app/uploads
+      - app-uploads:/app/uploads
     networks:
       - chatsphere-network
 
@@ -156,5 +156,4 @@ volumes:
   mongo-data:
   redis-data:
   rabbitmq-data:
-  user-uploads:
-  chat-uploads:
+  app-uploads:
