@@ -25,35 +25,59 @@ const authInterceptor = (config: InternalAxiosRequestConfig) => {
 userApi.interceptors.request.use(authInterceptor, (err) => Promise.reject(err));
 chatApi.interceptors.request.use(authInterceptor, (err) => Promise.reject(err));
 
+const hasFileExtension = (pathStr: string) => {
+  return /\.(jpg|jpeg|png|gif|webp|svg|pdf|doc|docx|mp3|wav|ogg|m4a|aac|webm|txt)$/i.test(pathStr);
+};
+
 export const getAvatarUrl = (url?: string | null) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
   
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  if (cleanPath.startsWith('/uploads') || cleanPath.includes('avatar-') || cleanPath.includes('file-')) {
-    const formatted = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`;
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  if (
+    cleanPath.startsWith('/uploads') ||
+    cleanPath.includes('avatar-') ||
+    cleanPath.includes('file-') ||
+    hasFileExtension(cleanPath)
+  ) {
+    const filename = cleanPath.replace(/^\/uploads\/?/, '');
+    const formatted = `/uploads/${filename}`;
     if (isProduction) return formatted;
     const userBaseUrl = import.meta.env.VITE_USER_SERVICE_URL
       ? import.meta.env.VITE_USER_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5000';
     return `${userBaseUrl}${formatted}`;
   }
-  return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
+  return `https://res.cloudinary.com/dzssijacq/image/upload/${trimmed}`;
 };
 
 export const getMediaUrl = (url?: string | null) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
   
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  if (cleanPath.startsWith('/uploads') || cleanPath.includes('avatar-') || cleanPath.includes('file-')) {
-    const formatted = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`;
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  if (
+    cleanPath.startsWith('/uploads') ||
+    cleanPath.includes('avatar-') ||
+    cleanPath.includes('file-') ||
+    hasFileExtension(cleanPath)
+  ) {
+    const filename = cleanPath.replace(/^\/uploads\/?/, '');
+    const formatted = `/uploads/${filename}`;
     if (isProduction) return formatted;
     const chatBaseUrl = import.meta.env.VITE_CHAT_SERVICE_URL
       ? import.meta.env.VITE_CHAT_SERVICE_URL.replace('/api/v1', '')
       : 'http://localhost:5002';
     return `${chatBaseUrl}${formatted}`;
   }
-  return `https://res.cloudinary.com/dzssijacq/image/upload/${url}`;
+  return `https://res.cloudinary.com/dzssijacq/image/upload/${trimmed}`;
 };
 

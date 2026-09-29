@@ -25,7 +25,15 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
+app.use(
+  '/uploads',
+  express.static(uploadsDir, {
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  })
+);
 
 app.use("/api/v1", chatRoutes);
 app.use("/api/v1", statusRoutes);

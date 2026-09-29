@@ -11,6 +11,9 @@ router.get('/me', isAuth, myProfile);
 router.get('/user/all', isAuth, getAllUsers);
 router.get('/user/:id', getAUser);
 router.post('/update/user', isAuth, upload.single('avatar'), updateName);
+router.put('/update/user', isAuth, upload.single('avatar'), updateName);
+router.post('/user/update', isAuth, upload.single('avatar'), updateName);
+router.put('/user/update', isAuth, upload.single('avatar'), updateName);
 
 
 

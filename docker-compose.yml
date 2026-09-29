@@ -139,6 +139,8 @@ services:
     restart: unless-stopped
     ports:
       - "5173:80"
+    volumes:
+      - app-uploads:/usr/share/nginx/html/uploads:ro
     depends_on:
       - user-service
       - chat-service
