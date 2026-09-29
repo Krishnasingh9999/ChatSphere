@@ -1330,12 +1330,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* Message input area */}
-      <div className={`px-2.5 py-2 sm:px-4 sm:py-3 border-t backdrop-blur-md z-10 relative transition-colors duration-300 w-full max-w-full overflow-hidden ${
+      <div className={`px-2.5 py-2 sm:px-4 sm:py-3 border-t backdrop-blur-md z-30 relative transition-colors duration-300 w-full max-w-full overflow-visible ${
         theme === 'light'
           ? 'bg-white/95 border-gray-200 shadow-sm'
           : 'bg-[#111827]/60 border-white/10'
       }`}>
-        <form onSubmit={handleSend} className="relative flex flex-col gap-1.5 sm:gap-2 w-full max-w-full">
+        <form onSubmit={handleSend} className="relative flex flex-col gap-1.5 sm:gap-2 w-full max-w-full overflow-visible">
           {/* File preview slider */}
           {filePreview && (
             <div className={`flex items-center gap-3 p-2.5 border rounded-xl max-w-sm animate-slide-up ${
@@ -1394,21 +1394,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           )}
 
           {/* Form input bar */}
-          <div className="flex items-center gap-1.5 sm:gap-2 relative w-full max-w-full min-w-0">
-            {/* WhatsApp-Style Emoji Picker Popup */}
+          <div className="flex items-center gap-1.5 sm:gap-2 relative w-full max-w-full min-w-0 overflow-visible">
+            {/* WhatsApp-Style Fully Responsive Emoji Picker Popup */}
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
-                className={`absolute bottom-full mb-3 left-0 z-50 shadow-2xl rounded-2xl overflow-hidden border animate-fade-in max-w-[calc(100vw-24px)] ${
-                  theme === 'light' ? 'bg-white border-gray-200' : 'bg-[#111827] border-white/10'
+                className={`absolute bottom-full mb-2.5 left-0 sm:left-1 z-[100] shadow-2xl rounded-2xl overflow-hidden border animate-fade-in w-[calc(100vw-20px)] sm:w-[340px] max-w-[340px] ${
+                  theme === 'light' ? 'bg-white border-gray-200 shadow-gray-400/30' : 'bg-[#111827] border-white/10 shadow-black/60'
                 }`}
               >
-                {/* WhatsApp Quick Emojis Header Bar */}
-                <div className={`p-2 border-b flex items-center justify-between gap-1 overflow-x-auto ${
+                {/* WhatsApp Quick Emojis Header Bar (Touch-scrollable on mobile) */}
+                <div className={`p-2 border-b flex items-center justify-between gap-1 overflow-x-auto touch-pan-x select-none ${
                   theme === 'light' ? 'bg-gray-50 border-gray-200' : 'bg-white/5 border-white/10'
                 }`}>
-                  <div className="flex items-center gap-1.5">
-                    {['😀', '😂', '😍', '❤️', '🔥', '👍', '🙏', '🎉', '👏', '🥳', '😎', '😢'].map((em) => (
+                  <div className="flex items-center gap-1.5 min-w-max">
+                    {['😀', '😂', '😍', '❤️', '🔥', '👍', '🙏', '🎉', '👏', '🥳', '😎', '😢', '💯', '✨'].map((em) => (
                       <button
                         key={em}
                         type="button"
@@ -1435,8 +1435,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   }}
                   autoFocusSearch={false}
                   lazyLoadEmojis={false}
-                  width={typeof window !== 'undefined' ? Math.min(340, window.innerWidth - 32) : 340}
-                  height={360}
+                  width="100%"
+                  height={320}
                   searchPlaceHolder="Search emojis..."
                 />
               </div>
