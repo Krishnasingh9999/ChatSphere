@@ -204,42 +204,54 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     textInputRef.current?.focus();
   };
 
-  // Close emoji, theme picker, & mobile menu on click outside
+  // Close emoji, theme picker, & mobile menu on click/touch outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!showEmojiPicker && !showThemePicker && !showMobileMenu) return;
+
+    const handlePointerOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
+      if (!target) return;
+
       if (
+        showEmojiPicker &&
         emojiPickerRef.current &&
         !emojiPickerRef.current.contains(target) &&
-        !target?.closest('.emoji-toggle-btn') &&
-        !target?.closest('.EmojiPickerReact') &&
-        !target?.closest('.epr-main')
+        !target.closest?.('.emoji-toggle-btn') &&
+        !target.closest?.('.EmojiPickerReact') &&
+        !target.closest?.('.epr-main')
       ) {
         setShowEmojiPicker(false);
       }
 
       if (
+        showThemePicker &&
         themePickerRef.current &&
         !themePickerRef.current.contains(target) &&
-        !target?.closest('.theme-toggle-btn')
+        !target.closest?.('.theme-toggle-btn')
       ) {
         setShowThemePicker(false);
       }
 
       if (
+        showMobileMenu &&
         mobileMenuRef.current &&
         !mobileMenuRef.current.contains(target) &&
-        !target?.closest('.mobile-menu-btn')
+        !target.closest?.('.mobile-menu-btn')
       ) {
         setShowMobileMenu(false);
       }
     };
 
-    if (showEmojiPicker || showThemePicker || showMobileMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    // Use a small delay to avoid capturing the triggering touch/click on mobile devices
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handlePointerOutside);
+      document.addEventListener('touchend', handlePointerOutside);
+    }, 120);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(timer);
+      document.removeEventListener('click', handlePointerOutside);
+      document.removeEventListener('touchend', handlePointerOutside);
     };
   }, [showEmojiPicker, showThemePicker, showMobileMenu]);
 
@@ -1399,6 +1411,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
+                onClick={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
                 className={`absolute bottom-full mb-2.5 left-0 sm:left-1 z-[100] shadow-2xl rounded-2xl overflow-hidden border animate-fade-in w-[calc(100vw-20px)] sm:w-[340px] max-w-[340px] ${
                   theme === 'light' ? 'bg-white border-gray-200 shadow-gray-400/30' : 'bg-[#111827] border-white/10 shadow-black/60'
                 }`}
@@ -1445,11 +1459,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <button
               type="button"
               onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowEmojiPicker((prev) => !prev);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowEmojiPicker((prev) => !prev);
               }}
               title="Add Emoji"
-              className={`emoji-toggle-btn p-2 sm:p-2.5 rounded-xl border active:scale-95 transition-all flex items-center justify-center flex-shrink-0 ${
+              className={`emoji-toggle-btn p-2 sm:p-2.5 rounded-xl border active:scale-95 transition-all flex items-center justify-center flex-shrink-0 touch-manipulation ${
                 showEmojiPicker
                   ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500/30'
                   : theme === 'light'
@@ -1457,7 +1477,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   : 'bg-white/5 hover:bg-indigo-500/20 text-gray-400 hover:text-indigo-400 border-white/5'
               }`}
             >
-              <Smile className="w-5 h-5" />
+              <Smile className="w-5 h-5 pointer-events-none" />
             </button>
 
             <input
