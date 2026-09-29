@@ -22,7 +22,8 @@ import {
   Eraser,
   ArrowLeft,
   Lock,
-  Unlock
+  Unlock,
+  MoreVertical
 } from 'lucide-react';
 import { useChatLock } from '../context/ChatLockContext';
 import { ChatLockModal, type ChatLockModalMode } from './ChatLockModal';
@@ -103,8 +104,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [deleteTargetMessage, setDeleteTargetMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showClearChatModal, setShowClearChatModal] = useState(false);
   const themePickerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Track downloaded media IDs in localStorage like WhatsApp
   const [downloadedMedia, setDownloadedMedia] = useState<Set<string>>(() => {
@@ -198,7 +201,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     textInputRef.current?.focus();
   };
 
-  // Close emoji & theme picker on click outside
+  // Close emoji, theme picker, & mobile menu on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -216,15 +219,23 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       ) {
         setShowThemePicker(false);
       }
+
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement)?.closest('.mobile-menu-btn')
+      ) {
+        setShowMobileMenu(false);
+      }
     };
 
-    if (showEmojiPicker || showThemePicker) {
+    if (showEmojiPicker || showThemePicker || showMobileMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker, showThemePicker]);
+  }, [showEmojiPicker, showThemePicker, showMobileMenu]);
 
   // Fetch messages function
   const fetchMessages = async (showLoading = false) => {
@@ -574,12 +585,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       } rounded-full blur-[100px] pointer-events-none transition-colors duration-500`}></div>
       
       {/* Active Chat Header */}
-      <div className={`p-3 sm:p-4 border-b flex items-center justify-between backdrop-blur-md z-20 relative ${
+      <div className={`px-3 py-2.5 sm:px-4 sm:py-3.5 border-b flex items-center justify-between backdrop-blur-md z-20 relative ${
         theme === 'light'
-          ? 'bg-white/90 border-gray-200 shadow-xs'
-          : 'bg-[#111827]/30 border-white/10'
+          ? 'bg-white/95 border-gray-200 shadow-xs'
+          : 'bg-[#111827]/60 border-white/10'
       }`}>
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
           {onBack && (
             <button
               type="button"
@@ -613,11 +624,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               otherUser.name.slice(0, 2)
             )}
           </div>
-          <div className="flex flex-col text-left min-w-0">
-            <h3 className={`text-sm font-semibold font-display flex items-center gap-1.5 truncate ${
+          <div className="flex flex-col text-left min-w-0 flex-1">
+            <h3 className={`text-sm sm:text-base font-semibold font-display flex items-center gap-1.5 min-w-0 ${
               theme === 'light' ? 'text-gray-900' : 'text-white'
             }`}>
-              <span className="truncate">{otherUser.name}</span>
+              <span className="truncate max-w-full font-bold">{otherUser.name}</span>
               {isOnline ? (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
               ) : (
@@ -625,20 +636,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               )}
             </h3>
             {isOtherUserTyping ? (
-              <span className={`text-[11px] ${chatThemeConfig.accentText} font-semibold flex items-center gap-1.5 animate-pulse`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${chatThemeConfig.accentBg} animate-ping`}></span>
+              <span className={`text-[11px] ${chatThemeConfig.accentText} font-semibold flex items-center gap-1.5 animate-pulse truncate`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${chatThemeConfig.accentBg} animate-ping flex-shrink-0`}></span>
                 typing...
               </span>
             ) : (
-              <span className={`text-[10px] ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
-                {isOnline ? 'Online' : 'Offline'}
+              <span className={`text-[10px] sm:text-xs truncate ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
+                {isOnline ? 'Active now' : 'Offline'}
               </span>
             )}
           </div>
         </div>
 
         {/* Chat Header Actions */}
-        <div className="flex items-center gap-1 relative">
+        <div className="flex items-center gap-1 flex-shrink-0 relative">
           {/* Chat Theme Palette Picker */}
           <button
             type="button"
@@ -723,51 +734,130 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
           )}
 
-          {/* Lock / Unlock Chat Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setLockModalMode('toggle_chat');
-              setIsLockModalOpen(true);
-            }}
-            title={isChatInLockedList ? (isCurrentChatLocked ? "Unlock chat" : "Remove Chat Lock") : "Lock Chat (Secret Passcode)"}
-            className={`p-2 rounded-xl active:scale-95 transition-all ${
-              isChatInLockedList
-                ? 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20'
-                : theme === 'light'
-                ? 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'
-                : 'text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10'
-            }`}
-          >
-            {isChatInLockedList ? <Lock className="w-4.5 h-4.5 text-emerald-500" /> : <Lock className="w-4.5 h-4.5" />}
-          </button>
+          {/* Desktop Direct Action Icons */}
+          <div className="hidden md:flex items-center gap-1">
+            {/* Lock / Unlock Chat Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setLockModalMode('toggle_chat');
+                setIsLockModalOpen(true);
+              }}
+              title={isChatInLockedList ? (isCurrentChatLocked ? "Unlock chat" : "Remove Chat Lock") : "Lock Chat (Secret Passcode)"}
+              className={`p-2 rounded-xl active:scale-95 transition-all ${
+                isChatInLockedList
+                  ? 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20'
+                  : theme === 'light'
+                  ? 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'
+                  : 'text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10'
+              }`}
+            >
+              {isChatInLockedList ? <Lock className="w-4.5 h-4.5 text-emerald-500" /> : <Lock className="w-4.5 h-4.5" />}
+            </button>
 
-          {/* Clear Chat Button */}
-          <button
-            type="button"
-            onClick={() => setShowClearChatModal(true)}
-            title="Clear Chat History"
-            className={`p-2 rounded-xl active:scale-95 transition-all ${
-              theme === 'light'
-                ? 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'
-                : 'text-gray-400 hover:text-amber-400 hover:bg-amber-500/10'
-            }`}
-          >
-            <Eraser className="w-4.5 h-4.5" />
-          </button>
+            {/* Clear Chat Button */}
+            <button
+              type="button"
+              onClick={() => setShowClearChatModal(true)}
+              title="Clear Chat History"
+              className={`p-2 rounded-xl active:scale-95 transition-all ${
+                theme === 'light'
+                  ? 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'
+                  : 'text-gray-400 hover:text-amber-400 hover:bg-amber-500/10'
+              }`}
+            >
+              <Eraser className="w-4.5 h-4.5" />
+            </button>
 
-          {/* Delete Conversation Button */}
-          <button
-            onClick={handleDeleteChat}
-            title="Delete conversation for me"
-            className={`p-2 rounded-xl active:scale-95 transition-all ${
-              theme === 'light'
-                ? 'text-gray-500 hover:text-red-500 hover:bg-red-50'
-                : 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
-            }`}
-          >
-            <Trash2 className="w-4.5 h-4.5" />
-          </button>
+            {/* Delete Conversation Button */}
+            <button
+              onClick={handleDeleteChat}
+              title="Delete conversation for me"
+              className={`p-2 rounded-xl active:scale-95 transition-all ${
+                theme === 'light'
+                  ? 'text-gray-500 hover:text-red-500 hover:bg-red-50'
+                  : 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
+              }`}
+            >
+              <Trash2 className="w-4.5 h-4.5" />
+            </button>
+          </div>
+
+          {/* Mobile 3-Dots More Options Dropdown */}
+          <div className="relative md:hidden">
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu((prev) => !prev)}
+              title="More Options"
+              className={`mobile-menu-btn p-2 rounded-xl active:scale-95 transition-all ${
+                showMobileMenu
+                  ? 'bg-indigo-500/20 text-indigo-500'
+                  : theme === 'light'
+                  ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+
+            {showMobileMenu && (
+              <div
+                ref={mobileMenuRef}
+                className={`absolute top-full right-0 mt-2 w-52 p-2 rounded-2xl shadow-2xl border z-50 animate-scale-up ${
+                  theme === 'light'
+                    ? 'bg-white border-gray-200 text-gray-900 shadow-xl'
+                    : 'bg-[#111827] border-white/10 text-white shadow-2xl'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setLockModalMode('toggle_chat');
+                    setIsLockModalOpen(true);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                    isChatInLockedList
+                      ? 'text-emerald-500 hover:bg-emerald-500/10'
+                      : theme === 'light'
+                      ? 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-200 hover:bg-white/5'
+                  }`}
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{isChatInLockedList ? (isCurrentChatLocked ? "Unlock chat" : "Remove Chat Lock") : "Lock Chat"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowClearChatModal(true);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                    theme === 'light'
+                      ? 'text-gray-700 hover:bg-amber-50 hover:text-amber-600'
+                      : 'text-gray-200 hover:bg-amber-500/10 hover:text-amber-400'
+                  }`}
+                >
+                  <Eraser className="w-4 h-4 text-amber-500" />
+                  <span>Clear Chat History</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    handleDeleteChat();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Conversation</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1341,7 +1431,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               value={text}
               onChange={handleTextChange}
               disabled={sending}
-              className={`flex-1 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 ${chatThemeConfig.focusRing} focus:border-transparent transition-all ${
+              className={`flex-1 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-sm focus:outline-none focus:ring-2 ${chatThemeConfig.focusRing} focus:border-transparent transition-all ${
                 theme === 'light'
                   ? 'bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-400 focus:bg-white'
                   : 'bg-[#0b0f19]/80 border border-white/10 text-white placeholder-gray-500'

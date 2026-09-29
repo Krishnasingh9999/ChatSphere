@@ -254,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ? 'bg-gray-50/80 border-gray-200'
           : 'bg-[#111827]/20 border-white/10'
       }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-2">
           <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold uppercase font-display border border-indigo-400/20 shadow-md flex-shrink-0">
             {user.avatar?.url ? (
               <img
@@ -273,8 +273,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               user.name.slice(0, 2)
             )}
           </div>
-          <div className="flex flex-col text-left">
-            <h3 className={`text-sm font-semibold tracking-wide truncate max-w-[120px] font-display ${
+          <div className="flex flex-col text-left min-w-0 flex-1">
+            <h3 className={`text-sm sm:text-base font-semibold tracking-wide truncate max-w-full font-display ${
               theme === 'light' ? 'text-gray-900' : 'text-white'
             }`}>
               {user.name}

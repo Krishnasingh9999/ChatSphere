@@ -226,7 +226,7 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md select-none animate-fade-in">
       {/* Mobile/Desktop responsive story frame */}
       <div
-        className="relative w-full max-w-md h-[95vh] sm:h-[88vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between"
+        className="relative w-full max-w-md h-[100dvh] sm:h-[88vh] sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between"
         onMouseDown={() => setIsPaused(true)}
         onMouseUp={() => setIsPaused(false)}
         onTouchStart={() => setIsPaused(true)}
