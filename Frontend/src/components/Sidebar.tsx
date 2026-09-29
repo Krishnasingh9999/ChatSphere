@@ -508,7 +508,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div
                           key={item.chat._id}
                           onClick={() => onSelectChat(item)}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all duration-200 text-left cursor-pointer group ${
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all duration-200 text-left cursor-pointer group ${
                             isActive
                               ? theme === 'light'
                                 ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-xs'
@@ -518,99 +518,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               : 'border-transparent hover:bg-emerald-500/10 text-gray-300'
                           }`}
                         >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-500 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold uppercase font-display select-none flex-shrink-0 relative">
-                              <span className="text-xs font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
-                              {item.user.avatar?.url && (
-                                <img
-                                  src={getAvatarUrl(item.user.avatar.url)}
-                                  alt={item.user.name}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                  }}
-                                />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex justify-between items-baseline mb-0.5">
-                                <h4 className={`text-xs font-semibold truncate font-display ${
-                                  isActive 
-                                    ? theme === 'light' ? 'text-emerald-700 font-bold' : 'text-emerald-300'
-                                    : theme === 'light' ? 'text-gray-900' : 'text-white'
-                                }`}>
-                                  {item.user.name}
-                                </h4>
-                                <span className={`text-[9px] flex-shrink-0 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {formatTime(item.chat.updatedAt)}
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-500 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold uppercase font-display select-none flex-shrink-0 relative">
+                            <span className="text-xs font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
+                            {item.user.avatar?.url && (
+                              <img
+                                src={getAvatarUrl(item.user.avatar.url)}
+                                alt={item.user.name}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            )}
+                          </div>
+                          
+                          <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+                            <h4 className={`text-[13px] sm:text-sm font-semibold truncate font-display ${
+                              isActive 
+                                ? theme === 'light' ? 'text-emerald-700 font-bold' : 'text-emerald-300'
+                                : theme === 'light' ? 'text-gray-900' : 'text-white'
+                            }`}>
+                              {item.user.name}
+                            </h4>
+                            <p className={`text-[11px] sm:text-xs truncate ${
+                              hasUnread 
+                                ? theme === 'light' ? 'text-gray-900 font-semibold' : 'text-gray-200 font-medium' 
+                                : theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                            }`}>
+                              {isTyping ? (
+                                <span className="text-emerald-500 font-semibold flex items-center gap-1 animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block"></span>
+                                  typing...
                                 </span>
-                              </div>
-                              <p className={`text-[11px] truncate pr-2 ${
-                                hasUnread 
-                                  ? theme === 'light' ? 'text-gray-900 font-semibold' : 'text-gray-200 font-medium' 
-                                  : theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                              }`}>
-                                {isTyping ? (
-                                  <span className="text-emerald-500 font-semibold flex items-center gap-1 animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block"></span>
-                                    typing...
+                              ) : latestMsg ? (
+                                <>
+                                  <span className={`text-[10px] uppercase mr-0.5 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {latestMsg.sender === user._id ? 'You: ' : ''}
                                   </span>
-                                ) : latestMsg ? (
-                                  <>
-                                    <span className={`text-[10px] uppercase mr-0.5 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                      {latestMsg.sender === user._id ? 'You: ' : ''}
-                                    </span>
-                                    {latestMsg.text}
-                                  </>
-                                ) : (
-                                  <span className={`italic ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>No messages yet</span>
-                                )}
-                              </p>
-                            </div>
+                                  {latestMsg.text}
+                                </>
+                              ) : (
+                                <span className={`italic ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>No messages yet</span>
+                              )}
+                            </p>
                           </div>
 
-                          <div className="flex items-center gap-1">
-                            {/* Unlock / remove lock button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLockModalMode('toggle_chat');
-                                setLockModalTargetChat({
-                                  _id: item.chat._id,
-                                  userName: item.user.name,
-                                  isLocked: true,
-                                });
-                                setIsLockModalOpen(true);
-                              }}
-                              title="Unlock this chat"
-                              className={`p-1.5 rounded-lg transition-all ${
-                                theme === 'light'
-                                  ? 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
-                                  : 'text-gray-500 hover:text-emerald-400 hover:bg-white/10'
-                              }`}
-                            >
-                              <Unlock className="w-3.5 h-3.5" />
-                            </button>
+                          <div className="flex flex-col items-end justify-between flex-shrink-0 self-stretch min-w-[56px] ml-auto">
+                            <span className={`text-[10px] whitespace-nowrap font-medium ${
+                              hasUnread
+                                ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              {formatTime(item.chat.updatedAt)}
+                            </span>
 
-                            {/* Delete button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm(`Delete chat with ${item.user.name}?`)) {
-                                  onDeleteChat?.(item.chat._id);
-                                }
-                              }}
-                              title="Delete chat"
-                              className={`opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-all ${
-                                theme === 'light'
-                                  ? 'text-gray-400 hover:text-red-500 hover:bg-gray-200'
-                                  : 'text-gray-500 hover:text-red-400 hover:bg-white/10'
-                              }`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1 mt-1">
+                              {/* Unlock / remove lock button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLockModalMode('toggle_chat');
+                                  setLockModalTargetChat({
+                                    _id: item.chat._id,
+                                    userName: item.user.name,
+                                    isLocked: true,
+                                  });
+                                  setIsLockModalOpen(true);
+                                }}
+                                title="Unlock this chat"
+                                className={`p-1 rounded-lg transition-all ${
+                                  theme === 'light'
+                                    ? 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                    : 'text-gray-500 hover:text-emerald-400 hover:bg-white/10'
+                                }`}
+                              >
+                                <Unlock className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Delete chat with ${item.user.name}?`)) {
+                                    onDeleteChat?.(item.chat._id);
+                                  }
+                                }}
+                                title="Delete chat"
+                                className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all ${
+                                  theme === 'light'
+                                    ? 'text-gray-400 hover:text-red-500 hover:bg-gray-200'
+                                    : 'text-gray-500 hover:text-red-400 hover:bg-white/10'
+                                }`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -644,7 +648,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div
                     key={item.chat._id}
                     onClick={() => onSelectChat(item)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 text-left cursor-pointer group ${
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left cursor-pointer group ${
                       isActive
                         ? theme === 'light'
                           ? 'bg-indigo-50 border-indigo-200 text-indigo-950 shadow-sm'
@@ -658,135 +662,139 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'border-transparent hover:bg-white/5 text-gray-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      {/* Participant Avatar */}
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-600/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0 relative">
-                        <span className="text-sm font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
-                        {item.user.avatar?.url && (
-                          <img
-                            src={getAvatarUrl(item.user.avatar.url)}
-                            alt={item.user.name}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex justify-between items-baseline mb-0.5">
-                          <h4 className={`text-xs font-semibold truncate font-display ${
-                            isActive 
-                              ? theme === 'light' ? 'text-indigo-700 font-bold' : 'text-indigo-300'
-                              : theme === 'light' ? 'text-gray-900' : 'text-white'
-                          }`}>
-                            {item.user.name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {isPinned && (
-                              <span title="Pinned chat" className="text-indigo-500 flex items-center">
-                                <Pin className="w-3 h-3 rotate-45 fill-indigo-500/20 text-indigo-500" />
-                              </span>
-                            )}
-                            <span className={`text-[9px] ${
+                    {/* 1. Left: Participant Avatar */}
+                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-600/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm font-semibold uppercase font-display select-none flex-shrink-0 relative">
+                      <span className="text-sm font-semibold uppercase select-none">{item.user.name.slice(0, 2)}</span>
+                      {item.user.avatar?.url && (
+                        <img
+                          src={getAvatarUrl(item.user.avatar.url)}
+                          alt={item.user.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {/* 2. Middle: Name & Last Message Preview */}
+                    <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+                      <h4 className={`text-[13px] sm:text-sm font-semibold truncate font-display ${
+                        isActive 
+                          ? theme === 'light' ? 'text-indigo-700 font-bold' : 'text-indigo-300'
+                          : theme === 'light' ? 'text-gray-900' : 'text-white'
+                      }`}>
+                        {item.user.name}
+                      </h4>
+                      <p className={`text-[11px] sm:text-xs truncate ${
+                        hasUnread 
+                          ? theme === 'light' ? 'text-gray-900 font-semibold' : 'text-gray-200 font-medium' 
+                          : theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                      }`}>
+                        {isTyping ? (
+                          <span className="text-emerald-500 font-semibold flex items-center gap-1 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block"></span>
+                            typing...
+                          </span>
+                        ) : latestMsg ? (
+                          <>
+                            <span className={`text-[10px] uppercase mr-0.5 ${
                               theme === 'light' ? 'text-gray-400' : 'text-gray-500'
                             }`}>
-                              {formatTime(item.chat.updatedAt)}
+                              {latestMsg.sender === user._id ? 'You: ' : ''}
                             </span>
-                          </div>
-                        </div>
-                        <p className={`text-[11px] truncate pr-2 ${
-                          hasUnread 
-                            ? theme === 'light' ? 'text-gray-900 font-semibold' : 'text-gray-200 font-medium' 
-                            : theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                        }`}>
-                          {isTyping ? (
-                            <span className="text-emerald-500 font-semibold flex items-center gap-1 animate-pulse">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block"></span>
-                              typing...
-                            </span>
-                          ) : latestMsg ? (
-                            <>
-                              <span className={`text-[10px] uppercase mr-0.5 ${
-                                theme === 'light' ? 'text-gray-400' : 'text-gray-500'
-                              }`}>
-                                {latestMsg.sender === user._id ? 'You: ' : ''}
-                              </span>
-                              {latestMsg.text}
-                            </>
-                          ) : (
-                            <span className={`italic ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>No messages yet</span>
-                          )}
-                        </p>
-                      </div>
+                            {latestMsg.text}
+                          </>
+                        ) : (
+                          <span className={`italic ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>No messages yet</span>
+                        )}
+                      </p>
                     </div>
-                    
-                    <div className="flex items-center gap-1">
-                      {/* Pin / Unpin Chat Button (Max 3) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTogglePin?.(item.chat._id);
-                        }}
-                        title={isPinned ? "Unpin chat" : "Pin chat (Max 3)"}
-                        className={`${isPinned ? 'opacity-100 text-indigo-500' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-500'} p-1.5 rounded-lg transition-all ${
-                          theme === 'light'
-                            ? 'hover:bg-indigo-50'
-                            : 'hover:bg-white/10'
-                        }`}
-                      >
-                        {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                      </button>
 
-                      {/* Lock chat button (visible on hover) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setLockModalMode('toggle_chat');
-                          setLockModalTargetChat({
-                            _id: item.chat._id,
-                            userName: item.user.name,
-                            isLocked: false,
-                          });
-                          setIsLockModalOpen(true);
-                        }}
-                        title="Lock chat (protect with passcode)"
-                        className={`opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-all ${
-                          theme === 'light'
-                            ? 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
-                            : 'text-gray-500 hover:text-emerald-400 hover:bg-white/10'
-                        }`}
-                      >
-                        <Lock className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Delete chat button (visible on hover) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm(`Delete chat with ${item.user.name}?`)) {
-                            onDeleteChat?.(item.chat._id);
-                          }
-                        }}
-                        title="Delete chat"
-                        className={`opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-all ${
-                          theme === 'light'
-                            ? 'text-gray-400 hover:text-red-500 hover:bg-gray-200'
-                            : 'text-gray-500 hover:text-red-400 hover:bg-white/10'
-                        }`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Unread Message Badge */}
-                      {hasUnread && (
-                        <span className="ml-1 w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-[10px] font-bold text-white flex items-center justify-center shadow-lg shadow-indigo-500/20 select-none animate-bounce">
-                          {item.chat.unseenCount}
+                    {/* 3. Right: Far-Right Timestamp, Pin, Unread Badge & Actions */}
+                    <div className="flex flex-col items-end justify-between flex-shrink-0 self-stretch min-w-[56px] ml-auto">
+                      {/* Top Right: Time & Pin Indicator */}
+                      <div className="flex items-center gap-1">
+                        {isPinned && (
+                          <span title="Pinned chat" className="text-indigo-500 flex items-center">
+                            <Pin className="w-3 h-3 rotate-45 fill-indigo-500/20 text-indigo-500" />
+                          </span>
+                        )}
+                        <span className={`text-[10px] whitespace-nowrap font-medium ${
+                          hasUnread
+                            ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                            : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          {formatTime(item.chat.updatedAt)}
                         </span>
-                      )}
+                      </div>
+
+                      {/* Bottom Right: Unread message badge OR Action Buttons on hover */}
+                      <div className="flex items-center gap-1 mt-1">
+                        {/* Pin / Unpin button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTogglePin?.(item.chat._id);
+                          }}
+                          title={isPinned ? "Unpin chat" : "Pin chat (Max 3)"}
+                          className={`${isPinned ? 'opacity-100 text-indigo-500' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-500'} p-1 rounded-lg transition-all ${
+                            theme === 'light' ? 'hover:bg-indigo-50' : 'hover:bg-white/10'
+                          }`}
+                        >
+                          {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                        </button>
+
+                        {/* Lock chat button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLockModalMode('toggle_chat');
+                            setLockModalTargetChat({
+                              _id: item.chat._id,
+                              userName: item.user.name,
+                              isLocked: false,
+                            });
+                            setIsLockModalOpen(true);
+                          }}
+                          title="Lock chat"
+                          className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all ${
+                            theme === 'light'
+                              ? 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                              : 'text-gray-500 hover:text-emerald-400 hover:bg-white/10'
+                          }`}
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Delete chat button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete chat with ${item.user.name}?`)) {
+                              onDeleteChat?.(item.chat._id);
+                            }
+                          }}
+                          title="Delete chat"
+                          className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all ${
+                            theme === 'light'
+                              ? 'text-gray-400 hover:text-red-500 hover:bg-gray-200'
+                              : 'text-gray-500 hover:text-red-400 hover:bg-white/10'
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Unread Message Badge */}
+                        {hasUnread && (
+                          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-[10px] font-bold text-white flex items-center justify-center shadow-md shadow-indigo-500/20 select-none">
+                            {item.chat.unseenCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
