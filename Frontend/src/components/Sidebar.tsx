@@ -192,7 +192,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   const unviewedStatusesCount = recentStatuses.filter((s) => !s.allViewed).length;
-  const totalUnreadChats = regularChats.reduce((acc, c) => acc + (c.chat.unseenCount || 0), 0);
+  // WhatsApp behavior: Count the number of unread chats/conversations, not total messages sum
+  const totalUnreadChats = regularChats.filter((c) => (c.chat.unseenCount || 0) > 0).length;
 
   // Helper to format timestamp
   const formatTime = (isoString: string) => {
