@@ -26,7 +26,8 @@ import {
   MoreVertical,
   Pin,
   PinOff,
-  Phone
+  Phone,
+  Video
 } from 'lucide-react';
 import { useChatLock } from '../context/ChatLockContext';
 import { useCall } from '../context/CallContext';
@@ -680,7 +681,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             type="button"
             onClick={() => {
               if (otherUser) {
-                startCall(otherUser);
+                startCall(otherUser, 'audio');
               }
             }}
             title="Voice Call (Free Internet Call)"
@@ -691,6 +692,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             }`}
           >
             <Phone className="w-4.5 h-4.5 text-emerald-500" />
+          </button>
+
+          {/* Free WebRTC Video Calling Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (otherUser) {
+                startCall(otherUser, 'video');
+              }
+            }}
+            title="Video Call (Free Internet Call)"
+            className={`p-2 rounded-xl active:scale-95 transition-all flex items-center justify-center ${
+              theme === 'light'
+                ? 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+                : 'text-gray-300 hover:text-indigo-400 hover:bg-indigo-500/10'
+            }`}
+          >
+            <Video className="w-4.5 h-4.5 text-indigo-500" />
           </button>
 
           {/* Chat Theme Palette Picker */}

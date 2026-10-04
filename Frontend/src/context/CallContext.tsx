@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 
+export type CallType = 'audio' | 'video';
 export type CallStatus = 'idle' | 'calling' | 'incoming' | 'connected' | 'ended';
 
 interface CallParticipant {
@@ -12,15 +13,22 @@ interface CallParticipant {
 
 interface CallContextType {
   callStatus: CallStatus;
+  callType: CallType;
   otherUser: CallParticipant | null;
   isCaller: boolean;
   isMuted: boolean;
+  isVideoOff: boolean;
+  isFrontCamera: boolean;
   callDuration: number;
-  startCall: (targetUser: CallParticipant) => Promise<void>;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  startCall: (targetUser: CallParticipant, type?: CallType) => Promise<void>;
   acceptCall: () => Promise<void>;
   rejectCall: () => void;
   endCall: () => void;
   toggleMute: () => void;
+  toggleVideo: () => void;
+  flipCamera: () => Promise<void>;
 }
 
 const ICE_SERVERS = {
@@ -40,10 +48,15 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
 
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
+  const [callType, setCallType] = useState<CallType>('audio');
   const [otherUser, setOtherUser] = useState<CallParticipant | null>(null);
   const [isCaller, setIsCaller] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
+  const [isFrontCamera, setIsFrontCamera] = useState<boolean>(true);
   const [callDuration, setCallDuration] = useState<number>(0);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -134,6 +147,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
     }
+    setLocalStream(null);
+    setRemoteStream(null);
 
     if (peerConnectionRef.current) {
       peerConnectionRef.current.onicecandidate = null;
@@ -148,6 +163,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     incomingSignalRef.current = null;
     setIsMuted(false);
+    setIsVideoOff(false);
+    setIsFrontCamera(true);
     setCallDuration(0);
   };
 
@@ -165,9 +182,13 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     pc.ontrack = (event) => {
-      if (remoteAudioRef.current && event.streams && event.streams[0]) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-        remoteAudioRef.current.play().catch((err) => console.warn('Audio autoplay prevented:', err));
+      if (event.streams && event.streams[0]) {
+        const stream = event.streams[0];
+        setRemoteStream(stream);
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play().catch((err) => console.warn('Audio autoplay prevented:', err));
+        }
       }
     };
 
@@ -176,18 +197,25 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Start outgoing call
-  const startCall = async (targetUser: CallParticipant) => {
+  const startCall = async (targetUser: CallParticipant, type: CallType = 'audio') => {
     if (!socket || !user) return;
     try {
       cleanupCall();
       setIsCaller(true);
       setOtherUser(targetUser);
+      setCallType(type);
       setCallStatus('calling');
       startRingtone('outgoing');
 
-      // Request microphone stream
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Request media stream based on call type
+      const constraints: MediaStreamConstraints = {
+        audio: true,
+        video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
+      setLocalStream(stream);
 
       const pc = createPeerConnection(targetUser._id);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -201,10 +229,11 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         from: user._id,
         callerName: user.name,
         callerAvatar: user.avatar,
+        callType: type,
       });
     } catch (err) {
-      console.error('Failed to start call / mic permission denied:', err);
-      alert('Could not access microphone. Please allow microphone permissions.');
+      console.error('Failed to start call / permission denied:', err);
+      alert(type === 'video' ? 'Could not access camera/microphone. Please check permissions.' : 'Could not access microphone. Please check permissions.');
       setCallStatus('idle');
       cleanupCall();
     }
@@ -217,9 +246,15 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stopRingtone();
       setCallStatus('connected');
 
-      // Request microphone stream
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Request media stream based on incoming callType
+      const constraints: MediaStreamConstraints = {
+        audio: true,
+        video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
+      setLocalStream(stream);
 
       const pc = createPeerConnection(otherUser._id);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -277,11 +312,55 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Toggle camera video state (on/off)
+  const toggleVideo = () => {
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoOff(!videoTrack.enabled);
+      }
+    }
+  };
+
+  // Flip camera between front and back
+  const flipCamera = async () => {
+    if (callType !== 'video' || !localStreamRef.current || !peerConnectionRef.current) return;
+    try {
+      const newFacingMode = isFrontCamera ? 'environment' : 'user';
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: newFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      if (newVideoTrack) {
+        const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+        if (oldVideoTrack) {
+          oldVideoTrack.stop();
+          localStreamRef.current.removeTrack(oldVideoTrack);
+        }
+
+        localStreamRef.current.addTrack(newVideoTrack);
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+
+        const sender = peerConnectionRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
+        if (sender) {
+          sender.replaceTrack(newVideoTrack);
+        }
+
+        setIsFrontCamera(!isFrontCamera);
+      }
+    } catch (err) {
+      console.warn('Flip camera not supported or failed:', err);
+    }
+  };
+
   // Socket listener for incoming call events
   useEffect(() => {
     if (!socket) return;
 
-    const handleIncomingCall = (data: { signal: any; from: string; callerName: string; callerAvatar?: any }) => {
+    const handleIncomingCall = (data: { signal: any; from: string; callerName: string; callerAvatar?: any; callType?: CallType }) => {
       if (callStatus !== 'idle') {
         socket.emit('reject-call', { to: data.from });
         return;
@@ -289,6 +368,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       incomingSignalRef.current = data.signal;
       setIsCaller(false);
+      setCallType(data.callType || 'audio');
       setOtherUser({
         _id: data.from,
         name: data.callerName || 'Incoming Caller',
@@ -369,15 +449,22 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <CallContext.Provider
       value={{
         callStatus,
+        callType,
         otherUser,
         isCaller,
         isMuted,
+        isVideoOff,
+        isFrontCamera,
         callDuration,
+        localStream,
+        remoteStream,
         startCall,
         acceptCall,
         rejectCall,
         endCall,
         toggleMute,
+        toggleVideo,
+        flipCamera,
       }}
     >
       {children}
@@ -392,3 +479,4 @@ export const useCall = () => {
   }
   return context;
 };
+

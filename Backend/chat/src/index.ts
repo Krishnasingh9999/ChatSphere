@@ -167,9 +167,9 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================
-  // WebRTC Free Voice Calling Signaling Events
+  // WebRTC Free Voice & Video Calling Signaling Events
   // ==========================================
-  socket.on("call-user", ({ userToCall, signalData, from, callerName, callerAvatar }: { userToCall: string; signalData: any; from: string; callerName: string; callerAvatar?: any }) => {
+  socket.on("call-user", ({ userToCall, signalData, from, callerName, callerAvatar, callType }: { userToCall: string; signalData: any; from: string; callerName: string; callerAvatar?: any; callType?: 'audio' | 'video' }) => {
     const receiverSocketId = getReceiverSocketId(userToCall);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("incoming-call", {
@@ -177,6 +177,7 @@ io.on("connection", (socket) => {
         from,
         callerName,
         callerAvatar,
+        callType: callType || 'audio',
       });
     } else {
       socket.emit("call-user-offline", { userId: userToCall });
