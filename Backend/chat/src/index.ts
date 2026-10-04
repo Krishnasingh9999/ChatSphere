@@ -166,6 +166,51 @@ io.on("connection", (socket) => {
     }
   });
 
+  // ==========================================
+  // WebRTC Free Voice Calling Signaling Events
+  // ==========================================
+  socket.on("call-user", ({ userToCall, signalData, from, callerName, callerAvatar }: { userToCall: string; signalData: any; from: string; callerName: string; callerAvatar?: any }) => {
+    const receiverSocketId = getReceiverSocketId(userToCall);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("incoming-call", {
+        signal: signalData,
+        from,
+        callerName,
+        callerAvatar,
+      });
+    } else {
+      socket.emit("call-user-offline", { userId: userToCall });
+    }
+  });
+
+  socket.on("answer-call", ({ to, signal }: { to: string; signal: any }) => {
+    const callerSocketId = getReceiverSocketId(to);
+    if (callerSocketId) {
+      io.to(callerSocketId).emit("call-accepted", { signal });
+    }
+  });
+
+  socket.on("ice-candidate", ({ to, candidate }: { to: string; candidate: any }) => {
+    const targetSocketId = getReceiverSocketId(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("ice-candidate", { candidate });
+    }
+  });
+
+  socket.on("end-call", ({ to }: { to: string }) => {
+    const targetSocketId = getReceiverSocketId(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-ended");
+    }
+  });
+
+  socket.on("reject-call", ({ to }: { to: string }) => {
+    const callerSocketId = getReceiverSocketId(to);
+    if (callerSocketId) {
+      io.to(callerSocketId).emit("call-rejected");
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
     for (const [userId, socketId] of Object.entries(userSocketMap)) {

@@ -25,9 +25,11 @@ import {
   Unlock,
   MoreVertical,
   Pin,
-  PinOff
+  PinOff,
+  Phone
 } from 'lucide-react';
 import { useChatLock } from '../context/ChatLockContext';
+import { useCall } from '../context/CallContext';
 import { ChatLockModal, type ChatLockModalMode } from './ChatLockModal';
 
 import { getAvatarUrl, getMediaUrl } from '../utils/api';
@@ -92,6 +94,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const { theme, chatTheme, setChatTheme, chatThemeConfig } = useTheme();
   const { socket, onlineUsers } = useSocket();
   const { lockedChatIds, isChatLocked, fetchLockStatus } = useChatLock();
+  const { startCall } = useCall();
 
   const isCurrentChatLocked = chatId ? isChatLocked(chatId) : false;
   const isChatInLockedList = chatId ? lockedChatIds.includes(chatId) : false;
@@ -672,6 +675,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
         {/* Chat Header Actions */}
         <div className="flex items-center gap-1 flex-shrink-0 relative">
+          {/* Free WebRTC Voice Calling Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (otherUser) {
+                startCall(otherUser);
+              }
+            }}
+            title="Voice Call (Free Internet Call)"
+            className={`p-2 rounded-xl active:scale-95 transition-all flex items-center justify-center ${
+              theme === 'light'
+                ? 'text-gray-600 hover:text-emerald-600 hover:bg-emerald-50'
+                : 'text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/10'
+            }`}
+          >
+            <Phone className="w-4.5 h-4.5 text-emerald-500" />
+          </button>
+
           {/* Chat Theme Palette Picker */}
           <button
             type="button"

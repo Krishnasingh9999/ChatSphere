@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ChatLockProvider } from './context/ChatLockContext';
+import { CallProvider } from './context/CallContext';
+import { CallModal } from './components/CallModal';
 import { Login } from './components/Login';
 import { Onboarding } from './components/Onboarding';
 import { Dashboard } from './components/Dashboard';
@@ -42,7 +44,10 @@ const AppContent: React.FC = () => {
 
   return (
     <SocketProvider>
-      <Dashboard />
+      <CallProvider>
+        <Dashboard />
+        <CallModal />
+      </CallProvider>
     </SocketProvider>
   );
 };
