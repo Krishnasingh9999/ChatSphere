@@ -10,6 +10,7 @@ export interface User {
     url: string;
     publicId: string;
   } | null;
+  contacts?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

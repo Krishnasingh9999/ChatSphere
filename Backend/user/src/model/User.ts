@@ -7,6 +7,7 @@ export interface IUser extends Document{
     url: string;
     publicId: string;
   };
+  contacts?: mongoose.Types.ObjectId[];
 }
 
 const schema: Schema<IUser> = new Schema({
@@ -23,6 +24,11 @@ const schema: Schema<IUser> = new Schema({
     url: { type: String, default: "" },
     publicId: { type: String, default: "" },
   },
+  contacts: [{
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    default: [],
+  }],
 },
 {
     timestamps: true,

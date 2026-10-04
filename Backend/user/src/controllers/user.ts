@@ -301,3 +301,94 @@ export const getAUser = TryCatch(async(req, res) => {
 
   res.json(targetUser);
 });
+
+export const addContact = TryCatch(async(req: AuthenticatedRequest, res) => {
+  const contactId = String(req.params.id);
+  if (!contactId || contactId === "undefined" || contactId === req.user?._id?.toString()) {
+    res.status(400).json({ message: "Invalid contact ID" });
+    return;
+  }
+
+  if (mongoose.connection.readyState === 1) {
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    if (!user.contacts) {
+      user.contacts = [];
+    }
+    const alreadySaved = user.contacts.some(id => id.toString() === contactId);
+    if (!alreadySaved) {
+      user.contacts.push(new mongoose.Types.ObjectId(contactId));
+      await user.save();
+    }
+    res.json({ message: "Contact saved successfully", contacts: user.contacts });
+  } else {
+    const user = inMemoryUsers.find(u => u._id === req.user?._id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    if (!user.contacts) user.contacts = [];
+    if (!user.contacts.includes(contactId)) {
+      user.contacts.push(contactId);
+    }
+    res.json({ message: "Contact saved successfully", contacts: user.contacts });
+  }
+});
+
+export const removeContact = TryCatch(async(req: AuthenticatedRequest, res) => {
+  const contactId = String(req.params.id);
+  if (!contactId || contactId === "undefined") {
+    res.status(400).json({ message: "Invalid contact ID" });
+    return;
+  }
+
+  if (mongoose.connection.readyState === 1) {
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    if (user.contacts && user.contacts.length > 0) {
+      user.contacts = user.contacts.filter(id => id.toString() !== contactId);
+      await user.save();
+    }
+    res.json({ message: "Contact removed successfully", contacts: user.contacts });
+  } else {
+    const user = inMemoryUsers.find(u => u._id === req.user?._id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    if (user.contacts) {
+      user.contacts = user.contacts.filter((id: string) => id !== contactId);
+    }
+    res.json({ message: "Contact removed successfully", contacts: user.contacts });
+  }
+});
+
+export const getSavedContacts = TryCatch(async(req: AuthenticatedRequest, res) => {
+  if (!req.user?._id) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  if (mongoose.connection.readyState === 1) {
+    const user = await User.findById(req.user._id).populate("contacts", "_id name email avatar");
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    res.json(user.contacts || []);
+  } else {
+    const user = inMemoryUsers.find(u => u._id === req.user?._id);
+    if (!user || !user.contacts) {
+      res.json([]);
+      return;
+    }
+    const populated = inMemoryUsers.filter(u => user.contacts.includes(u._id));
+    res.json(populated);
+  }
+});
