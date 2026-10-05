@@ -1,82 +1,80 @@
-# ChatSphere — Real-Time Microservices Messaging Platform
+# ChatSphere
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Available-brightgreen)](https://chatsphere-live.duckdns.org)
-[![Docker](https://img.shields.io/badge/Docker-Compose%20Ready-blue)](docker-compose.yml)
-[![Node.js](https://img.shields.io/badge/Node.js-v20+-green)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-19.0-61DAFB)](https://react.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+ChatSphere is a real-time messaging and communication platform built using an event-driven microservices architecture. It supports instant chat, peer-to-peer voice and video calls, passwordless authentication, multimedia sharing, and 24-hour status updates.
 
-ChatSphere is a full-stack, distributed real-time messaging application designed with an event-driven microservices architecture. It provides secure instant communication, WebRTC voice and video calling, passwordless OTP authentication, multimedia status stories, and encrypted chat vaults.
-
-**Live Application**: [https://chatsphere-live.duckdns.org](https://chatsphere-live.duckdns.org)
+**Live Application:** https://chatsphere-live.duckdns.org
 
 ---
 
-## Key Features
+## Overview
 
-### 💬 Real-Time Messaging & Presence
-- **Instant Messaging**: Low-latency bi-directional messaging powered by Socket.IO.
-- **Message Status Indicators**: Real-time delivery and read receipts (Sent, Delivered, Seen).
-- **Interactive Typing Indicators**: Live typing state broadcast with auto-timeout.
-- **Message Controls**: Delete for Me, Delete for Everyone, and Clear Chat History.
+ChatSphere is designed as a distributed system where services operate independently and communicate asynchronously through RabbitMQ and real-time WebSockets (Socket.IO). The user interface is built with React 19, offering a responsive experience with dark and light mode support.
 
-### 📞 Voice & Video Calling (WebRTC)
-- **Peer-to-Peer Calls**: Free, low-latency audio and video calls powered by WebRTC and Google public STUN servers.
-- **Video Controls**: Fullscreen remote stream, floating Picture-in-Picture (PIP) local preview, camera flip (front/back), and video/mic toggle.
+---
 
-### 🔐 Security & Authentication
-- **Passwordless OTP Login**: 6-digit email OTP verification processed asynchronously via RabbitMQ.
-- **Secret Chat Lock**: Passcode-protected hidden vault with PBKDF2 SHA-512 cryptographic hashing.
-- **Rate-Limiting**: Redis-backed cooldowns and TTL protection against spam requests.
+## Features
 
-### ⭐ Contact Management & Social
-- **Saved Contacts**: Phonebook directory allowing users to bookmark frequent contacts for instant access.
-- **24-Hour Stories**: Share photo and text status updates with view receipts and automatic 24-hour expiration.
-- **Multimedia Sharing**: Upload and preview images, audio voice notes, PDFs, and documents.
-- **Adaptive UI**: Dark and light theme modes with customizable chat color presets.
+### Messaging
+- Real-time text messaging with low latency.
+- Delivery status tracking: Sent, Delivered, and Seen receipts.
+- Live typing indicators with automatic timeouts.
+- Message management: Delete for Me, Delete for Everyone, and Clear Chat.
+
+### Calling
+- Free peer-to-peer voice and video calling via WebRTC.
+- Powered by Google public STUN servers (zero third-party calling costs).
+- Fullscreen remote video, Picture-in-Picture (PIP) local preview, camera flipping, and audio/video toggles.
+
+### Security and Authentication
+- Passwordless login using 6-digit email OTPs.
+- Asynchronous OTP dispatch using RabbitMQ message queues.
+- Redis-backed rate limiting and OTP expiration.
+- Passcode-protected secret chat vaults encrypted with PBKDF2 SHA-512.
+
+### Contacts and Social
+- Saved Contacts directory to bookmark frequent contacts for instant access.
+- 24-hour status stories with image, text, and view tracking support.
+- Attachment support for images, audio voice notes, PDFs, and documents.
+- Customizable chat theme presets and dark/light mode toggle.
+
+---
+
+## Technology Stack
+
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Socket.io-Client
+- **Backend Services:** Node.js (v20), Express.js, TypeScript, Socket.IO, WebRTC
+- **Database & Cache:** MongoDB, Redis
+- **Message Broker:** RabbitMQ
+- **Media & Email:** Cloudinary, Nodemailer (SMTP)
+- **Deployment:** Docker, Docker Compose, Nginx Reverse Proxy, AWS EC2
 
 ---
 
 ## System Architecture
 
 ```text
-                               ┌────────────────────────────────┐
-                               │  Frontend Client (React 19)    │
-                               └───────────────┬────────────────┘
-                                               │ (HTTPS / WSS)
-                               ┌───────────────▼────────────────┐
-                               │      Nginx Reverse Proxy       │
-                               └───────┬────────┬────────┬──────┘
-                                       │        │        │
-                   ┌───────────────────┘        │        └───────────────────┐
-                   ▼                            ▼                            ▼
-        ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-        │    User Service     │      │    Chat Service     │      │    Mail Service     │
-        │     (Port 5000)     │      │     (Port 5002)     │      │     (Port 5001)     │
-        │  Auth, Profile &    │      │  Socket.IO, WebRTC  │      │  RabbitMQ Consumer  │
-        │   Saved Contacts    │      │  Status & Vault     │      │  Nodemailer Worker  │
-        └──────────┬──────────┘      └──────────┬──────────┘      └──────────▲──────────┘
-                   │                            │                            │
-                   │    ┌───────────────────┐   │   ┌────────────────────┐   │
-                   ├───►│   MongoDB Cloud   │◄──┤   │  RabbitMQ Broker   ├───┘
-                   │    └───────────────────┘   │   │   (AMQP Queue)     │
-                   │    ┌───────────────────┐   │   └────────────────────┘
-                   └───►│   Redis Caching   │◄──┘
-                        └───────────────────┘
+               +----------------------------------------+
+               |        React 19 Frontend Client        |
+               +-------------------+--------------------+
+                                   | (HTTPS / WSS)
+               +-------------------v--------------------+
+               |          Nginx Reverse Proxy           |
+               +---------+------------------+-----------+
+                         |                  |
+         +---------------v----+   +---------v----------+   +--------------------+
+         |    User Service    |   |    Chat Service    |   |    Mail Service    |
+         |    (Port 5000)     |   |    (Port 5002)     |   |    (Port 5001)     |
+         | Auth, Profile,     |   | Messaging, Calls,  |   | RabbitMQ Consumer, |
+         | Contacts           |   | Status, Vault      |   | SMTP Delivery      |
+         +--------+-----------+   +---------+----------+   +---------^----------+
+                  |                         |                        |
+                  |     +--------------+    |    +---------------+   |
+                  +---->|   MongoDB    |<---+    |   RabbitMQ    +---+
+                  |     +--------------+    |    +---------------+
+                  |     +--------------+    |
+                  +---->|    Redis     |<---+
+                        +--------------+
 ```
-
----
-
-## Technology Stack
-
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Socket.io-Client |
-| **Microservices** | Node.js (v20), Express.js, TypeScript, Socket.IO, WebRTC |
-| **Database & Cache** | MongoDB (Mongoose ODM), Redis (v7) |
-| **Message Queue** | RabbitMQ (AMQP 5672) |
-| **Media & Delivery** | Cloudinary CDN, Nodemailer SMTP |
-| **DevOps & Infrastructure** | Docker, Docker Compose, Nginx, Let's Encrypt SSL, AWS EC2 |
 
 ---
 
@@ -85,12 +83,12 @@ ChatSphere is a full-stack, distributed real-time messaging application designed
 ```text
 ChatSphere/
 ├── Backend/
-│   ├── user/          # User authentication, profile & contact service (Port 5000)
+│   ├── user/          # Authentication, profile, and contact management (Port 5000)
 │   ├── mail/          # Asynchronous email OTP worker (Port 5001)
-│   └── chat/          # Real-time messaging, calling & status service (Port 5002)
-├── Frontend/          # React Single Page Application (Port 5173 / 80)
-├── docker-compose.yml # Unified multi-service orchestration
-└── README.md
+│   └── chat/          # Messaging, WebRTC signaling, status, and vault (Port 5002)
+├── Frontend/          # React single-page application (Port 5173 / 80)
+├── docker-compose.yml # Multi-container configuration
+└── README.md          # Documentation
 ```
 
 ---
@@ -98,68 +96,83 @@ ChatSphere/
 ## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v20 or higher)
-- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
-- [Git](https://git-scm.com/)
+
+- Node.js (v20 or higher)
+- Docker and Docker Compose
+- Git
 
 ---
 
-### Quick Start with Docker (Recommended)
+### Running with Docker (Recommended)
 
-1. **Clone the repository**:
+1. Clone the repository:
    ```bash
    git clone https://github.com/Krishnasingh9999/ChatSphere.git
    cd ChatSphere
    ```
 
-2. **Launch all services**:
+2. Start all containers:
    ```bash
    docker compose up -d --build
    ```
 
-3. **Access endpoints**:
-   - **Frontend App**: `http://localhost:5173`
-   - **User Service API**: `http://localhost:5000`
-   - **Mail Service API**: `http://localhost:5001`
-   - **Chat Service API & Socket**: `http://localhost:5002`
-   - **RabbitMQ Management**: `http://localhost:15672` *(Default: guest / guest)*
+3. Access the services:
+   - Frontend Application: `http://localhost:5173`
+   - User Service API: `http://localhost:5000`
+   - Mail Service API: `http://localhost:5001`
+   - Chat Service API & WebSockets: `http://localhost:5002`
+   - RabbitMQ Management: `http://localhost:15672` (Credentials: `guest` / `guest`)
 
 ---
 
-### Local Development Setup (Without Docker)
+### Running Locally (Manual Setup)
 
-1. **Start database dependencies**:
+1. Start database services:
    ```bash
    docker compose up -d mongo redis rabbitmq
    ```
 
-2. **Install & start each service**:
+2. Start each microservice in separate terminal windows:
 
+   **User Service:**
    ```bash
-   # Terminal 1: User Service
-   cd Backend/user && npm install && npm run dev
+   cd Backend/user
+   npm install
+   npm run dev
+   ```
 
-   # Terminal 2: Mail Service
-   cd Backend/mail && npm install && npm run dev
+   **Mail Service:**
+   ```bash
+   cd Backend/mail
+   npm install
+   npm run dev
+   ```
 
-   # Terminal 3: Chat Service
-   cd Backend/chat && npm install && npm run dev
+   **Chat Service:**
+   ```bash
+   cd Backend/chat
+   npm install
+   npm run dev
+   ```
 
-   # Terminal 4: Frontend Client
-   cd Frontend && npm install && npm run dev
+   **Frontend Client:**
+   ```bash
+   cd Frontend
+   npm install
+   npm run dev
    ```
 
 ---
 
-## Environment Configuration
+## Environment Variables
 
-Each service supports configuration via environment variables:
+Configure `.env` files in each service directory as needed:
 
-### User Service (`Backend/user/.env`) & Chat Service (`Backend/chat/.env`)
+### User & Chat Services (`Backend/user/.env`, `Backend/chat/.env`)
 ```env
-PORT=5000 # 5002 for chat service
+PORT=5000 # Use 5002 for chat service
 MONGO_URI=mongodb://localhost:27017/chatsphere
-JWT_SECRET=your_secure_jwt_secret
+JWT_SECRET=your_jwt_secret_key
 REDIS_URL=redis://localhost:6379
 RABBITMQ_URL=amqp://localhost:5672
 ```
@@ -174,12 +187,6 @@ SMTP_PASS=your_email_app_password
 
 ---
 
-## Author
-
-Created and maintained by **Krishna Singh** ([@Krishnasingh9999](https://github.com/Krishnasingh9999)).
-
----
-
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is open source and available under the [MIT License](LICENSE).
