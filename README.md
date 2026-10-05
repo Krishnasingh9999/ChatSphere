@@ -41,12 +41,14 @@ ChatSphere is designed as a distributed system where services operate independen
 
 ## Technology Stack
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Socket.io-Client
-- **Backend Services:** Node.js (v20), Express.js, TypeScript, Socket.IO, WebRTC
-- **Database & Cache:** MongoDB, Redis
-- **Message Broker:** RabbitMQ
-- **Media & Email:** Cloudinary, Nodemailer (SMTP)
-- **Deployment:** Docker, Docker Compose, Nginx Reverse Proxy, AWS EC2
+| Layer | Technologies Used |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, Socket.io-Client |
+| Backend Services | Node.js (v20), Express.js, TypeScript, Socket.IO, WebRTC |
+| Database & Caching | MongoDB (Mongoose), Redis |
+| Message Broker | RabbitMQ |
+| Storage & Email | Cloudinary CDN, Nodemailer (SMTP) |
+| DevOps & Infrastructure | Docker, Docker Compose, Nginx Reverse Proxy, Let's Encrypt SSL, AWS EC2 |
 
 ---
 
@@ -184,6 +186,14 @@ RABBITMQ_URL=amqp://localhost:5672
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_email_app_password
 ```
+
+---
+
+## Author
+
+**Krishna Singh**
+- GitHub: [@Krishnasingh9999](https://github.com/Krishnasingh9999)
+- Repository: [ChatSphere](https://github.com/Krishnasingh9999/ChatSphere)
 
 ---
 
