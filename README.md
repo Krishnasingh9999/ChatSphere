@@ -1,32 +1,82 @@
-# ChatSphere
+# ChatSphere — Real-Time Microservices Messaging Platform
 
-ChatSphere is a real-time messaging web application built with the MERN stack and an event-driven microservices architecture. It supports instant text messaging, free voice and video calling, passwordless OTP login, status stories, and private chat vaults.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Available-brightgreen)](https://chatsphere-live.duckdns.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose%20Ready-blue)](docker-compose.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-v20+-green)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Live Demo: https://chatsphere-live.duckdns.org
+ChatSphere is a full-stack, distributed real-time messaging application designed with an event-driven microservices architecture. It provides secure instant communication, WebRTC voice and video calling, passwordless OTP authentication, multimedia status stories, and encrypted chat vaults.
 
----
-
-## Features
-
-- **Real-Time Chat**: Instant messaging powered by Socket.IO with typing indicators and read receipts (sent, delivered, seen).
-- **Voice & Video Calling**: Free peer-to-peer audio and video calls using WebRTC and Google public STUN servers.
-- **Passwordless Authentication**: 6-digit email OTP verification using RabbitMQ and Redis.
-- **Saved Contacts**: Save and manage frequent contacts to quickly start conversations.
-- **Secret Chat Lock**: Passcode-protected vaults to hide sensitive chats.
-- **24-Hour Stories**: Share photos or text updates that automatically expire after 24 hours.
-- **Media & File Sharing**: Send images, audio messages, PDFs, and documents.
-- **Theme Support**: Dark mode and light mode with customizable chat bubble colors.
+**Live Application**: [https://chatsphere-live.duckdns.org](https://chatsphere-live.duckdns.org)
 
 ---
 
-## Tech Stack
+## Key Features
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Socket.io-client
-- **Backend Services**: Node.js, Express.js, TypeScript, Socket.IO, WebRTC
-- **Database & Cache**: MongoDB, Redis
-- **Message Broker**: RabbitMQ
-- **Media & Email**: Cloudinary, Nodemailer (SMTP)
-- **Deployment**: Docker, Docker Compose, Nginx, AWS EC2
+### 💬 Real-Time Messaging & Presence
+- **Instant Messaging**: Low-latency bi-directional messaging powered by Socket.IO.
+- **Message Status Indicators**: Real-time delivery and read receipts (Sent, Delivered, Seen).
+- **Interactive Typing Indicators**: Live typing state broadcast with auto-timeout.
+- **Message Controls**: Delete for Me, Delete for Everyone, and Clear Chat History.
+
+### 📞 Voice & Video Calling (WebRTC)
+- **Peer-to-Peer Calls**: Free, low-latency audio and video calls powered by WebRTC and Google public STUN servers.
+- **Video Controls**: Fullscreen remote stream, floating Picture-in-Picture (PIP) local preview, camera flip (front/back), and video/mic toggle.
+
+### 🔐 Security & Authentication
+- **Passwordless OTP Login**: 6-digit email OTP verification processed asynchronously via RabbitMQ.
+- **Secret Chat Lock**: Passcode-protected hidden vault with PBKDF2 SHA-512 cryptographic hashing.
+- **Rate-Limiting**: Redis-backed cooldowns and TTL protection against spam requests.
+
+### ⭐ Contact Management & Social
+- **Saved Contacts**: Phonebook directory allowing users to bookmark frequent contacts for instant access.
+- **24-Hour Stories**: Share photo and text status updates with view receipts and automatic 24-hour expiration.
+- **Multimedia Sharing**: Upload and preview images, audio voice notes, PDFs, and documents.
+- **Adaptive UI**: Dark and light theme modes with customizable chat color presets.
+
+---
+
+## System Architecture
+
+```text
+                               ┌────────────────────────────────┐
+                               │  Frontend Client (React 19)    │
+                               └───────────────┬────────────────┘
+                                               │ (HTTPS / WSS)
+                               ┌───────────────▼────────────────┐
+                               │      Nginx Reverse Proxy       │
+                               └───────┬────────┬────────┬──────┘
+                                       │        │        │
+                   ┌───────────────────┘        │        └───────────────────┐
+                   ▼                            ▼                            ▼
+        ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
+        │    User Service     │      │    Chat Service     │      │    Mail Service     │
+        │     (Port 5000)     │      │     (Port 5002)     │      │     (Port 5001)     │
+        │  Auth, Profile &    │      │  Socket.IO, WebRTC  │      │  RabbitMQ Consumer  │
+        │   Saved Contacts    │      │  Status & Vault     │      │  Nodemailer Worker  │
+        └──────────┬──────────┘      └──────────┬──────────┘      └──────────▲──────────┘
+                   │                            │                            │
+                   │    ┌───────────────────┐   │   ┌────────────────────┐   │
+                   ├───►│   MongoDB Cloud   │◄──┤   │  RabbitMQ Broker   ├───┘
+                   │    └───────────────────┘   │   │   (AMQP Queue)     │
+                   │    ┌───────────────────┐   │   └────────────────────┘
+                   └───►│   Redis Caching   │◄──┘
+                        └───────────────────┘
+```
+
+---
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Socket.io-Client |
+| **Microservices** | Node.js (v20), Express.js, TypeScript, Socket.IO, WebRTC |
+| **Database & Cache** | MongoDB (Mongoose ODM), Redis (v7) |
+| **Message Queue** | RabbitMQ (AMQP 5672) |
+| **Media & Delivery** | Cloudinary CDN, Nodemailer SMTP |
+| **DevOps & Infrastructure** | Docker, Docker Compose, Nginx, Let's Encrypt SSL, AWS EC2 |
 
 ---
 
@@ -35,11 +85,11 @@ Live Demo: https://chatsphere-live.duckdns.org
 ```text
 ChatSphere/
 ├── Backend/
-│   ├── user/          # User auth, profile, and contacts service (Port 5000)
-│   ├── mail/          # Asynchronous email OTP consumer (Port 5001)
-│   └── chat/          # Messaging, calling signaling, status, and lock service (Port 5002)
-├── Frontend/          # React web client (Port 5173 / 80)
-├── docker-compose.yml # Container orchestration configuration
+│   ├── user/          # User authentication, profile & contact service (Port 5000)
+│   ├── mail/          # Asynchronous email OTP worker (Port 5001)
+│   └── chat/          # Real-time messaging, calling & status service (Port 5002)
+├── Frontend/          # React Single Page Application (Port 5173 / 80)
+├── docker-compose.yml # Unified multi-service orchestration
 └── README.md
 ```
 
@@ -48,95 +98,88 @@ ChatSphere/
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js (v20 or higher)
-- Docker and Docker Compose
-- Git
+- [Node.js](https://nodejs.org/) (v20 or higher)
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
+- [Git](https://git-scm.com/)
 
 ---
 
-### Option 1: Running with Docker (Recommended)
+### Quick Start with Docker (Recommended)
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/Krishnasingh9999/ChatSphere.git
    cd ChatSphere
    ```
 
-2. Start all services using Docker Compose:
+2. **Launch all services**:
    ```bash
    docker compose up -d --build
    ```
 
-3. Open the application:
-   - Frontend: `http://localhost:5173`
-   - User Service API: `http://localhost:5000`
-   - Mail Service API: `http://localhost:5001`
-   - Chat Service API: `http://localhost:5002`
-   - RabbitMQ Dashboard: `http://localhost:15672` (Username: `guest`, Password: `guest`)
+3. **Access endpoints**:
+   - **Frontend App**: `http://localhost:5173`
+   - **User Service API**: `http://localhost:5000`
+   - **Mail Service API**: `http://localhost:5001`
+   - **Chat Service API & Socket**: `http://localhost:5002`
+   - **RabbitMQ Management**: `http://localhost:15672` *(Default: guest / guest)*
 
 ---
 
-### Option 2: Running Locally (Manual Setup)
+### Local Development Setup (Without Docker)
 
-1. Start databases and message queue:
+1. **Start database dependencies**:
    ```bash
    docker compose up -d mongo redis rabbitmq
    ```
 
-2. Start the User Service:
-   ```bash
-   cd Backend/user
-   npm install
-   npm run dev
-   ```
+2. **Install & start each service**:
 
-3. Start the Mail Service:
    ```bash
-   cd Backend/mail
-   npm install
-   npm run dev
-   ```
+   # Terminal 1: User Service
+   cd Backend/user && npm install && npm run dev
 
-4. Start the Chat Service:
-   ```bash
-   cd Backend/chat
-   npm install
-   npm run dev
-   ```
+   # Terminal 2: Mail Service
+   cd Backend/mail && npm install && npm run dev
 
-5. Start the Frontend Client:
-   ```bash
-   cd Frontend
-   npm install
-   npm run dev
+   # Terminal 3: Chat Service
+   cd Backend/chat && npm install && npm run dev
+
+   # Terminal 4: Frontend Client
+   cd Frontend && npm install && npm run dev
    ```
 
 ---
 
-## Environment Variables
+## Environment Configuration
 
-Create `.env` files in each service directory as needed:
+Each service supports configuration via environment variables:
 
-### User & Chat Services (`Backend/user/.env` and `Backend/chat/.env`):
+### User Service (`Backend/user/.env`) & Chat Service (`Backend/chat/.env`)
 ```env
-PORT=5000
+PORT=5000 # 5002 for chat service
 MONGO_URI=mongodb://localhost:27017/chatsphere
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=your_secure_jwt_secret
 REDIS_URL=redis://localhost:6379
 RABBITMQ_URL=amqp://localhost:5672
 ```
 
-### Mail Service (`Backend/mail/.env`):
+### Mail Service (`Backend/mail/.env`)
 ```env
 PORT=5001
 RABBITMQ_URL=amqp://localhost:5672
 SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_password
+SMTP_PASS=your_email_app_password
 ```
+
+---
+
+## Author
+
+Created and maintained by **Krishna Singh** ([@Krishnasingh9999](https://github.com/Krishnasingh9999)).
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
