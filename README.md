@@ -1,308 +1,142 @@
-# 💬 ChatSphere — Scalable Real-Time Microservice Messaging Platform
+# ChatSphere
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-chatsphere--live.duckdns.org-22c55e?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chatsphere-live.duckdns.org)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
-[![Node.js](https://img.shields.io/badge/Node.js-v20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Async%20Broker-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
-[![Redis](https://img.shields.io/badge/Redis-In--Memory%20Store-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Cluster-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+ChatSphere is a real-time messaging web application built with the MERN stack and an event-driven microservices architecture. It supports instant text messaging, free voice and video calling, passwordless OTP login, status stories, and private chat vaults.
 
-> **ChatSphere** is an enterprise-grade, distributed microservices messaging and social status ecosystem inspired by WhatsApp and Telegram. Engineered for high concurrency, fault tolerance, and zero-trust security, ChatSphere features passwordless email OTP verification, real-time WebSocket communication, end-to-end secret chat vaults, and multimedia status stories.
+Live Demo: https://chatsphere-live.duckdns.org
 
 ---
 
-## 🌐 Live Deployment
+## Features
 
-- **Production URL**: [https://chatsphere-live.duckdns.org](https://chatsphere-live.duckdns.org)
-- **Infrastructure**: AWS EC2 Linux (`eu-north-1`), Docker Containerized, Nginx Reverse Proxy with Let's Encrypt Automated SSL (HTTPS/WSS).
-
----
-
-## 🏗️ System Architecture
-
-ChatSphere follows an **Event-Driven Microservices Architecture** with independent, decoupled services communicating asynchronously via RabbitMQ message broker and real-time Socket.IO events.
-
-```mermaid
-flowchart TB
-    subgraph Clients["Clients & Edge Tier"]
-        Browser["🌐 Web Client (React 19 + Vite + Tailwind CSS)"]
-    end
-
-    subgraph ReverseProxy["Edge Gateway Tier"]
-        Nginx["🛡️ Nginx Reverse Proxy & SSL (Port 80 / 443)"]
-    end
-
-    subgraph Services["Application Microservices Tier"]
-        UserService["👤 User Service (Node/Express - Port 5000)\n• JWT Authentication\n• Profile Management\n• OTP Generation & Publishing"]
-        MailService["📧 Mail Service (Node/Express - Port 5001)\n• RabbitMQ Queue Consumer\n• SMTP Email Delivery Engine"]
-        ChatService["💬 Chat Service (Node/Express/Socket.io - Port 5002)\n• Real-Time Messaging & Presence\n• Stories / 24h Status Engine\n• PBKDF2 Encrypted Chat Vaults"]
-    end
-
-    subgraph Data["Persistence & Messaging Infrastructure Tier"]
-        RabbitMQ[("🐇 RabbitMQ Broker\nAMQP 5672 | UI 15672")]
-        Redis[("⚡ Redis Cache\nOTP Store & Rate Limiter")]
-        MongoDB[("🍃 MongoDB Database\nPersistent Schemas")]
-        Cloudinary[("☁️ Cloudinary CDN\nMedia & Document Storage")]
-    end
-
-    Browser -->|HTTPS / WSS| Nginx
-    Nginx -->|/ | Browser
-    Nginx -->|/api/v1/(login|verify|me|user)| UserService
-    Nginx -->|/api/v1/(chat|message|status|lock)| ChatService
-    Nginx -->|/socket.io/| ChatService
-
-    UserService -->|Publish 'send-otp'| RabbitMQ
-    RabbitMQ -->|Consume 'send-otp'| MailService
-    UserService -->|Set / Expire OTP (5m)| Redis
-    UserService -->|Read / Write Users| MongoDB
-    ChatService -->|Read / Write Messages & Status| MongoDB
-    ChatService -->|Upload Assets| Cloudinary
-```
+- **Real-Time Chat**: Instant messaging powered by Socket.IO with typing indicators and read receipts (sent, delivered, seen).
+- **Voice & Video Calling**: Free peer-to-peer audio and video calls using WebRTC and Google public STUN servers.
+- **Passwordless Authentication**: 6-digit email OTP verification using RabbitMQ and Redis.
+- **Saved Contacts**: Save and manage frequent contacts to quickly start conversations.
+- **Secret Chat Lock**: Passcode-protected vaults to hide sensitive chats.
+- **24-Hour Stories**: Share photos or text updates that automatically expire after 24 hours.
+- **Media & File Sharing**: Send images, audio messages, PDFs, and documents.
+- **Theme Support**: Dark mode and light mode with customizable chat bubble colors.
 
 ---
 
-## ✨ Key Features
+## Tech Stack
 
-### 🔐 1. Passwordless Secure Authentication
-- **6-Digit Email OTP Login**: Eliminates credential stuffing and password leak risks.
-- **Asynchronous Queue Processing**: OTP emails are published to a dedicated RabbitMQ queue (`send-otp`), ensuring instantaneous API response times without waiting on SMTP latency.
-- **Rate-Limiting & Expiry**: Protected with Redis key expiration (5-minute TTL for OTPs, 60-second cooldown rate limiting).
-- **Graceful Fallbacks**: Built-in in-memory fallback stores and direct HTTP worker failover in case of external queue maintenance.
-
-### ⚡ 2. Real-Time Chat & Socket.IO Engine
-- **Instant Messaging**: Low-latency bi-directional messaging powered by WebSockets (`ws`/`wss`).
-- **Live User Presence**: Dynamic tracking of online/offline status with real-time green badge indicators.
-- **Interactive Typing Indicators**: Live typing state broadcast with auto-silence timeouts.
-- **Delivery & Read Receipts**: Real-time tick indicators (Single tick = Sent, Double tick = Delivered, Blue tick = Seen).
-- **Message Lifecycle Management**: 
-  - *Delete for Me* (Local visibility removal).
-  - *Delete for Everyone* (Real-time broadcast replacement across all participants).
-  - *Clear Chat History* (Participant-specific wipe).
-
-### 🔒 3. Secret Chat Lock & Vault
-- **PBKDF2 SHA-512 Encryption**: Passcode salted and hashed securely.
-- **WhatsApp-Style Hidden Locked Folder**: Sensitive conversations are concealed from the main sidebar.
-- **Privacy Shielding**: Message previews and sender identities in locked chats are masked in notifications and unread badges.
-
-### 📸 4. 24-Hour Stories / Status Engine
-- **Rich Media Status**: Share custom images, captions, and text-based stories.
-- **WhatsApp-Style Ring Progress Indicator**: Segmented ring tracking unviewed stories per contact.
-- **View Receipts & Counters**: Track who viewed your stories in real-time.
-- **Automatic 24-Hour TTL**: Statuses auto-expire and purge from feeds after 24 hours.
-
-### 📁 5. Multimedia & Document Sharing
-- **Multi-Format Support**: Images (JPG, PNG, GIF, WebP, SVG), Documents (PDF, DOCX), and Audio (MP3, WAV, OGG, M4A).
-- **Optimized CDN Hosting**: Cloudinary asset integration with automatic fallback to local multi-part uploads.
-- **In-App Media Previews & On-Demand Downloads**: Clean progress badges, download tracking, and full-resolution lightbox viewing.
-
-### 🎨 6. UI & UX Refinement
-- **Modern Glassmorphism Theme**: Fully responsive dark/light mode toggle with smooth transitions.
-- **Custom Chat Bubble Palettes**: Multiple theme presets (Indigo Neon, Emerald Glow, Cyberpunk Violet, Midnight Slate, Sunset Amber).
-- **In-App Toasts & Sound Alerts**: Non-intrusive sound alerts and desktop notifications when messages arrive while working in another tab.
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Socket.io-client
+- **Backend Services**: Node.js, Express.js, TypeScript, Socket.IO, WebRTC
+- **Database & Cache**: MongoDB, Redis
+- **Message Broker**: RabbitMQ
+- **Media & Email**: Cloudinary, Nodemailer (SMTP)
+- **Deployment**: Docker, Docker Compose, Nginx, AWS EC2
 
 ---
 
-## 🛠️ Technology Stack
-
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, Emoji Picker React, Axios, Socket.io-Client |
-| **Backend** | Node.js (v20), Express.js (v5), TypeScript, Socket.IO, Multer, JSON Web Tokens (JWT) |
-| **Databases & Cache** | MongoDB (Mongoose ODM), Redis (v7 Alpine) |
-| **Message Broker** | RabbitMQ (v3 Management Alpine) |
-| **Cloud & Storage** | Cloudinary API, Multer Cloudinary Storage, Gmail SMTP (Nodemailer) |
-| **DevOps & Infra** | Docker, Docker Compose, Nginx Reverse Proxy, Let's Encrypt Certbot SSL, AWS EC2 Linux |
-
----
-
-## 📁 Repository Structure
+## Project Structure
 
 ```text
 ChatSphere/
 ├── Backend/
-│   ├── user/                    # User Authentication & Profile Microservice (Port 5000)
-│   │   ├── src/
-│   │   │   ├── config/          # DB, Redis, RabbitMQ & JWT configs
-│   │   │   ├── controllers/     # Login, OTP verification, Profile handlers
-│   │   │   ├── middleware/      # JWT Auth & Multer upload middleware
-│   │   │   ├── model/           # Mongoose User Schema
-│   │   │   └── routes/          # User API endpoints (/api/v1/...)
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   ├── mail/                    # Asynchronous Email Worker Microservice (Port 5001)
-│   │   ├── src/
-│   │   │   ├── consumer.ts      # RabbitMQ 'send-otp' queue consumer
-│   │   │   ├── mailer.ts        # Nodemailer SMTP transporter & templates
-│   │   │   └── index.ts         # Direct HTTP fallback endpoint
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   └── chat/                    # Real-time Messaging, Socket & Status Microservice (Port 5002)
-│       ├── src/
-│       │   ├── config/          # MongoDB & Cloudinary integrations
-│       │   ├── controllers/     # Chat, Message, Status & Lock controllers
-│       │   ├── models/          # Chat, Messages, Status & ChatSecurity schemas
-│       │   ├── routes/          # Chat (/api/v1/chat), Message, Status, Lock routes
-│       │   └── index.ts         # Socket.IO event gateway & HTTP server
-│       ├── Dockerfile
-│       └── package.json
-├── Frontend/                    # React 19 + Vite Single Page Application (Port 5173 / 80)
-│   ├── src/
-│   │   ├── components/          # Dashboard, ChatArea, Sidebar, Modals, Login, Toasts
-│   │   ├── context/             # AuthContext, SocketContext, ThemeContext, ChatLockContext
-│   │   ├── utils/               # Axios API client, Media URL resolvers, Sound effects
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── nginx.conf               # Container Nginx config for client-side routing
-│   ├── Dockerfile
-│   └── package.json
-├── docker-compose.yml           # Unified orchestration for all 7 microservices
-└── README.md                    # Project documentation
+│   ├── user/          # User auth, profile, and contacts service (Port 5000)
+│   ├── mail/          # Asynchronous email OTP consumer (Port 5001)
+│   └── chat/          # Messaging, calling signaling, status, and lock service (Port 5002)
+├── Frontend/          # React web client (Port 5173 / 80)
+├── docker-compose.yml # Container orchestration configuration
+└── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v20 or higher)
-- [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- [Git](https://git-scm.com/)
+
+- Node.js (v20 or higher)
+- Docker and Docker Compose
+- Git
 
 ---
 
-### Option 1: Quick Run via Docker Compose (Recommended)
+### Option 1: Running with Docker (Recommended)
 
-1. **Clone the repository**:
+1. Clone the repository:
    ```bash
    git clone https://github.com/Krishnasingh9999/ChatSphere.git
    cd ChatSphere
    ```
 
-2. **Launch all 7 services with Docker Compose**:
+2. Start all services using Docker Compose:
    ```bash
    docker compose up -d --build
    ```
 
-3. **Access Services**:
-   - **Frontend Application**: `http://localhost:5173`
-   - **User Service API**: `http://localhost:5000`
-   - **Mail Service API**: `http://localhost:5001`
-   - **Chat Service API & Socket**: `http://localhost:5002`
-   - **RabbitMQ Dashboard**: `http://localhost:15672` (User: `guest`, Pass: `guest`)
+3. Open the application:
+   - Frontend: `http://localhost:5173`
+   - User Service API: `http://localhost:5000`
+   - Mail Service API: `http://localhost:5001`
+   - Chat Service API: `http://localhost:5002`
+   - RabbitMQ Dashboard: `http://localhost:15672` (Username: `guest`, Password: `guest`)
 
 ---
 
-### Option 2: Local Development Setup
+### Option 2: Running Locally (Manual Setup)
 
-#### 1. Start Infrastructure Dependencies
-```bash
-# Start MongoDB, Redis, and RabbitMQ
-docker compose up -d mongo redis rabbitmq
+1. Start databases and message queue:
+   ```bash
+   docker compose up -d mongo redis rabbitmq
+   ```
+
+2. Start the User Service:
+   ```bash
+   cd Backend/user
+   npm install
+   npm run dev
+   ```
+
+3. Start the Mail Service:
+   ```bash
+   cd Backend/mail
+   npm install
+   npm run dev
+   ```
+
+4. Start the Chat Service:
+   ```bash
+   cd Backend/chat
+   npm install
+   npm run dev
+   ```
+
+5. Start the Frontend Client:
+   ```bash
+   cd Frontend
+   npm install
+   npm run dev
+   ```
+
+---
+
+## Environment Variables
+
+Create `.env` files in each service directory as needed:
+
+### User & Chat Services (`Backend/user/.env` and `Backend/chat/.env`):
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/chatsphere
+JWT_SECRET=your_jwt_secret_key
+REDIS_URL=redis://localhost:6379
+RABBITMQ_URL=amqp://localhost:5672
 ```
 
-#### 2. Start User Microservice
-```bash
-cd Backend/user
-npm install
-npm run dev
+### Mail Service (`Backend/mail/.env`):
+```env
+PORT=5001
+RABBITMQ_URL=amqp://localhost:5672
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
 ```
 
-#### 3. Start Mail Microservice
-```bash
-cd Backend/mail
-npm install
-npm run dev
-```
-
-#### 4. Start Chat Microservice
-```bash
-cd Backend/chat
-npm install
-npm run dev
-```
-
-#### 5. Start Frontend Client
-```bash
-cd Frontend
-npm install
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
 ---
 
-## 📡 API Reference
+## License
 
-### 👤 User Microservice (`Port 5000`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/v1/login` | Request email OTP for passwordless login | No |
-| `POST` | `/api/v1/verify` | Verify OTP code and receive JWT session token | No |
-| `GET` | `/api/v1/me` | Fetch authenticated user's profile | Yes (Bearer Token) |
-| `GET` | `/api/v1/user/all` | Get all registered users directory | Yes |
-| `GET` | `/api/v1/user/:id` | Get specific user by ID | No |
-| `POST` | `/api/v1/update/user` | Update display name or upload avatar | Yes |
-
-### 💬 Chat Microservice (`Port 5002`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/v1/chat/new` | Create or fetch conversation between users | Yes |
-| `GET` | `/api/v1/chat/all` | Fetch user's active chats with unread counts | Yes |
-| `DELETE` | `/api/v1/chat/:id` | Delete conversation for current user | Yes |
-| `PUT` | `/api/v1/chat/:id/clear` | Clear message history in conversation | Yes |
-| `POST` | `/api/v1/message` | Send text message or upload attachments | Yes |
-| `GET` | `/api/v1/message/:chatId` | Fetch message history for conversation | Yes |
-| `DELETE` | `/api/v1/message/:id` | Delete message for me | Yes |
-| `DELETE` | `/api/v1/message/:id/everyone` | Delete message for everyone | Yes |
-| `GET` | `/api/v1/status/all` | Fetch active 24h statuses (My & Contacts) | Yes |
-| `POST` | `/api/v1/status` | Create new image/text status story | Yes |
-| `PUT` | `/api/v1/status/:id/view` | Record status view receipt | Yes |
-| `DELETE` | `/api/v1/status/:id` | Delete specific status story | Yes |
-| `GET` | `/api/v1/lock/status` | Get chat lock vault status | Yes |
-| `POST` | `/api/v1/lock/set-passcode` | Set or change secret vault passcode | Yes |
-| `POST` | `/api/v1/lock/verify-passcode` | Verify secret passcode | Yes |
-| `POST` | `/api/v1/lock/toggle` | Lock or unlock specific chat | Yes |
-| `POST` | `/api/v1/lock/remove-passcode` | Remove vault passcode and unlock all | Yes |
-
----
-
-## ⚡ Socket.IO Event Gateway Reference
-
-| Event Name | Direction | Payload | Description |
-|---|---|---|---|
-| `join` | Client ➔ Server | `userId` | Registers client socket and marks undelivered messages delivered |
-| `new-message` | Server ➔ Client | `Message` object | Delivers incoming message to receiver in real-time |
-| `typing` | Bidirectional | `{ chatId, receiverId, senderId }` | Broadcasts active typing indicator |
-| `stop-typing` | Bidirectional | `{ chatId, receiverId, senderId }` | Clears active typing indicator |
-| `mark-seen` | Client ➔ Server | `{ chatId, senderId, receiverId }` | Marks unread messages as read |
-| `messages-seen` | Server ➔ Client | `{ chatId }` | Notifies sender of blue tick read receipt |
-| `messages-delivered` | Server ➔ Client | `{ chatId }` | Notifies sender of double tick delivery receipt |
-| `get-online-users` | Server ➔ Client | `string[]` (User IDs) | Broadcasts list of currently online users |
-| `user-profile-updated` | Server ➔ Client | `{ user }` | Broadcasts avatar/name changes to contacts |
-| `message-deleted-everyone` | Server ➔ Client | `{ messageId, chatId }` | Real-time wipe for deleted messages |
-
----
-
-## 🔒 Security & Reliability
-
-- **Zero Plaintext Passwords**: Passwordless OTP authentication prevents credential leaks.
-- **PBKDF2 Cryptographic Salting**: Chat Lock passcodes are hashed using 10,000 iterations of SHA-512.
-- **Fail-Safe Architecture**: Resilient against service downtime with memory-store fallbacks for Redis and RabbitMQ.
-- **Reverse Proxy Protection**: Production edge secured by Nginx with strict SSL/TLS encryption, automated Certbot renewal, and sanitized proxy headers.
-
----
-
-## 👨‍💻 Author & Contributions
-
-Created and maintained by **Krishna Singh** ([@Krishnasingh9999](https://github.com/Krishnasingh9999)).
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/Krishnasingh9999/ChatSphere/issues).
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
